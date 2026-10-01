@@ -21,8 +21,8 @@
   'use strict';
   if (window.__AURIX_DEMO_RUNTIME__) return;
 
-  var VERSION = '759';
-  var BUILD = 'v799-ws-usability';
+  var VERSION = '759+';
+  var BUILD = 'v799-ws-usability + propuesta onboarding premium (13cc3bc), no en producción';
   var DEMO_CODE = '24681357';
   var K = { state: 'aurix_demo_state_v1', db: 'aurix_demo_db_v1', auth: 'aurix_demo_auth_v1' };
   var API_HOST = 'demo-api.aurix.invalid';
