@@ -261,6 +261,47 @@
     }
     button.auth-link:disabled { opacity: 0.4; cursor: not-allowed; }
     button.auth-link:disabled:hover { color: var(--text-muted); }
+    /* ══ ONBOARDING PREMIUM · ACCESO ══════════════════════════════════════════
+       El mismo lenguaje que el onboarding: negro profundo, superficie negra con
+       matiz azul, azul eléctrico. Halo y estrellas detrás (sin eventos), animando
+       sólo opacidad. Con el teclado abierto la página desplaza en vez de recortar. */
+    body { background: #030407; overflow-x: hidden; overflow-y: auto; }
+    body::before {
+      inset: 0; animation: none;
+      background: radial-gradient(56% 42% at 50% 40%, rgba(46, 98, 230, 0.20), transparent 72%);
+    }
+    body::after {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        radial-gradient(1.2px 1.2px at 9% 16%,  rgba(200,218,255,.70) 50%, transparent 52%),
+        radial-gradient(1px 1px     at 22% 72%, rgba(200,218,255,.55) 50%, transparent 52%),
+        radial-gradient(1.4px 1.4px at 37% 9%,  rgba(170,200,255,.60) 50%, transparent 52%),
+        radial-gradient(1px 1px     at 58% 88%, rgba(200,218,255,.50) 50%, transparent 52%),
+        radial-gradient(1.2px 1.2px at 71% 21%, rgba(200,218,255,.65) 50%, transparent 52%),
+        radial-gradient(1px 1px     at 84% 63%, rgba(170,200,255,.55) 50%, transparent 52%),
+        radial-gradient(1.3px 1.3px at 93% 34%, rgba(200,218,255,.60) 50%, transparent 52%);
+      opacity: .55; animation: lgStarGlow 7s ease-in-out infinite alternate;
+    }
+    @keyframes lgStarGlow { from { opacity: .35; } to { opacity: .7; } }
+    .beta-container { position: relative; z-index: 1; }
+    .beta-card {
+      background: radial-gradient(120% 60% at 50% 0%, rgba(58,108,235,.16), transparent 60%), linear-gradient(180deg, rgba(12,20,40,.96), rgba(5,8,17,.98));
+      border: 1px solid rgba(90,140,255,.22);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset, 0 30px 90px -30px rgba(0,0,0,.92), 0 0 90px -34px rgba(74,130,240,.55);
+    }
+    .beta-access-label { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; text-transform: none; }
+    .beta-hint { color: rgba(214,224,245,.76); font-size: 13.5px; line-height: 1.5; max-width: 320px; margin-left: auto; margin-right: auto; }
+    .auth-field-label { display: block; align-self: stretch; text-align: left; font-size: 12.5px; font-weight: 600; color: rgba(214,224,245,.78); margin: 4px 0 -2px; }
+    .auth-input { background: rgba(255,255,255,.035); border-color: rgba(120,160,255,.22); color: #fff; min-height: 48px; font-size: 16px; }
+    .auth-input:focus { border-color: rgba(120,170,255,.7); box-shadow: 0 0 0 3px rgba(74,130,240,.18); }
+    .auth-btn { min-height: 48px; border: 0; color: #fff; background: linear-gradient(180deg, #5b8cff 0%, #3e70e6 100%); box-shadow: 0 10px 26px -12px rgba(74,130,240,.85); }
+    .auth-btn:disabled { opacity: .42; box-shadow: none; }
+    .auth-btn:focus-visible, .auth-link:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 2px; }
+    .otp-hint { color: rgba(214,224,245,.74); font-size: 13px; }
+    button.auth-link, .auth-link { min-height: 40px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; color: rgba(160,190,255,.92); }
+    .auth-error { font-size: 12.5px; }
+    @media (max-height: 640px) { body { align-items: flex-start; } }
+    @media (prefers-reduced-motion: reduce) { body::after { animation: none; } }
   </style>
 </head>
 <body>
@@ -281,8 +322,8 @@
            servidor. Así que el DEFECTO correcto es ABIERTO, y `_applyPrivateBetaGate()` lo CIERRA
            sólo si el lanzamiento público no está abierto. Un fallo de presentación ya no puede
            convertirse en denegación de servicio para quien sí tiene derecho a entrar. -->
-      <div class="beta-access-label" data-i18n="lg.publicAccess">Accede a Aurix</div>
-      <p class="beta-hint" data-i18n="lg.publicHint">Introduce tu correo para iniciar sesión o crear tu cuenta.</p>
+      <div class="beta-access-label" data-i18n="lg.publicAccess">Bienvenido a Aurix</div>
+      <p class="beta-hint" data-i18n="lg.publicHint">Todo tu patrimonio, en una sola visión. Entra o crea tu cuenta con tu correo: te enviaremos un código, sin contraseñas.</p>
 
       <!-- Invite gate — oculto por defecto; `_applyPrivateBetaGate()` lo muestra si hace falta. -->
       <div class="invite-section" style="display:none">
@@ -298,7 +339,7 @@
 
       <!-- Email step — ABIERTO por defecto (ver la nota de arriba). -->
       <div id="authSection" class="auth-section unlocked">
-        <h2 class="auth-title" data-i18n="lg.signin">Acceder</h2>
+        <label class="auth-title auth-field-label" for="email" data-i18n="lg.signin">Tu correo electrónico</label>
         <input id="email" type="email" class="auth-input"
                placeholder="correo electrónico" data-i18n-ph="lg.emailPh"
                autocomplete="email">
@@ -308,8 +349,8 @@
 
       <!-- OTP step (shown after email is sent) -->
       <div id="otpSection" class="auth-section" style="display:none">
-        <h2 class="auth-title" data-i18n="lg.verify">Verificar código</h2>
-        <p class="otp-hint" data-i18n="lg.otpHint">Estamos enviando el código de acceso a:</p>
+        <h2 class="auth-title" data-i18n="lg.otpTitle">Introduce tu código</h2>
+        <p class="otp-hint" data-i18n="lg.otpHint">Te hemos enviado un código de acceso a:</p>
         <p class="otp-dest" id="otpDestEmail"></p>
         <input id="otp-code" type="text" inputmode="numeric" pattern="[0-9]*"
                class="auth-input otp-input" placeholder="00000000"
@@ -589,14 +630,15 @@
         'lg.title': 'AURIX — Acceso',
         'lg.access': 'Acceso privado',
         'lg.hint': 'Aurix se encuentra actualmente en beta privada. Introduce tu código de invitación para continuar.',
-        'lg.publicAccess': 'Accede a Aurix',
-        'lg.publicHint': 'Introduce tu correo para iniciar sesión o crear tu cuenta.',
+        'lg.publicAccess': 'Bienvenido a Aurix',
+        'lg.publicHint': 'Todo tu patrimonio, en una sola visión. Entra o crea tu cuenta con tu correo: te enviaremos un código, sin contraseñas.',
         'lg.invitePh': 'Código de invitación',
-        'lg.signin': 'Acceder',
+        'lg.signin': 'Tu correo electrónico',
+        'lg.otpTitle': 'Introduce tu código',
         'lg.emailPh': 'correo electrónico',
         'lg.sendCode': 'Enviar código de acceso',
         'lg.verify': 'Verificar código',
-        'lg.otpHint': 'Estamos enviando el código de acceso a:',
+        'lg.otpHint': 'Te hemos enviado un código de acceso a:',
         'lg.resend': 'Reenviar código',
         'lg.otherEmail': 'Usar otro email',
         'lg.privateBeta': 'Beta privada',
@@ -625,14 +667,15 @@
         'lg.title': 'AURIX — Access',
         'lg.access': 'Private access',
         'lg.hint': 'Aurix is currently in private beta. Enter your invitation code to continue.',
-        'lg.publicAccess': 'Access Aurix',
-        'lg.publicHint': 'Enter your email to sign in or create your account.',
+        'lg.publicAccess': 'Welcome to Aurix',
+        'lg.publicHint': 'All your wealth, in one view. Sign in or create your account with your email: we will send you a code, no passwords.',
         'lg.invitePh': 'Invitation code',
-        'lg.signin': 'Sign in',
+        'lg.signin': 'Your email address',
+        'lg.otpTitle': 'Enter your code',
         'lg.emailPh': 'email address',
         'lg.sendCode': 'Send access code',
         'lg.verify': 'Verify code',
-        'lg.otpHint': 'We’re sending the access code to:',
+        'lg.otpHint': 'We sent an access code to:',
         'lg.resend': 'Resend code',
         'lg.otherEmail': 'Use another email',
         'lg.privateBeta': 'Private Beta',

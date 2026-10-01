@@ -7823,12 +7823,19 @@ const T = {
     onbActTitle:          'Añade tu primer activo',
     onbActSub:            'Empieza a construir tu visión financiera.',
     onbAddAssetBtn:       '+ Añadir activo',
-    onbSuccessTitle:      'Perfecto.',
-    onbSuccessSub:        'Tu patrimonio ya está en Aurix.',
-    onbSuccessBody1:      'Ya has añadido tu primer activo. Puedes seguir construyendo tu portfolio o entrar al dashboard.',
-    onbSuccessBodyN:      n => `Puedes seguir construyendo tu portfolio o entrar al dashboard.`,
-    onbSuccessCount:      n => n === 1 ? 'Tienes 1 activo' : `Tienes ${n} activos`,
-    onbAddAnother:        '+ Añadir otro activo',
+    onbSuccessTitle:      'Tu primera posición, registrada',
+    onbSuccessTitleN:     'Posición registrada',
+    onbSuccessSub:        'Ya forma parte de tu visión patrimonial.',
+    onbSuccessBody1:      'Puedes añadir el resto de tu patrimonio cuando quieras.',
+    onbSuccessBodyN:      n => `Llevas ${n} posiciones registradas. Puedes seguir añadiendo o ir a tu patrimonio.`,
+    onbSuccessCount:      n => n === 1 ? '1 posición registrada' : `${n} posiciones registradas`,
+    onbAddAnother:        'Añadir otro activo',
+    onbSumCategory:       'Categoría',
+    onbSumAmount:         'Importe',
+    onbSumCurrency:       'Moneda',
+    onbSumFx:             'Registrado en {c}. Tu patrimonio se muestra en {b} (moneda base) con el tipo de cambio de Aurix. Cámbiala en Ajustes.',
+    onbProgressStep:      'Paso {n} de {t}',
+    onbActNote:           'Registras información de tu patrimonio: Aurix no mueve dinero ni accede a tus cuentas.',
     onbGoDashboard:       'Ver mi patrimonio',
     onbWelcomeBullet1:    'Sigue tu evolución',
     onbWelcomeBullet2:    'Entiende tu exposición',
@@ -10682,12 +10689,19 @@ const T = {
     onbActTitle:          'Add your first asset',
     onbActSub:            'Start building your financial view.',
     onbAddAssetBtn:       '+ Add asset',
-    onbSuccessTitle:      'Great.',
-    onbSuccessSub:        'Your wealth is now in Aurix.',
-    onbSuccessBody1:      'You added your first asset. You can continue building your portfolio or go to your dashboard.',
-    onbSuccessBodyN:      n => `You can continue building your portfolio or go to your dashboard.`,
-    onbSuccessCount:      n => n === 1 ? 'You have 1 asset' : `You have ${n} assets`,
-    onbAddAnother:        '+ Add another asset',
+    onbSuccessTitle:      'Your first position, recorded',
+    onbSuccessTitleN:     'Position recorded',
+    onbSuccessSub:        'It is now part of your wealth view.',
+    onbSuccessBody1:      'You can add the rest of your wealth whenever you like.',
+    onbSuccessBodyN:      n => `You have ${n} positions recorded. Keep adding or go to your wealth.`,
+    onbSuccessCount:      n => n === 1 ? '1 position recorded' : `${n} positions recorded`,
+    onbAddAnother:        'Add another asset',
+    onbSumCategory:       'Category',
+    onbSumAmount:         'Amount',
+    onbSumCurrency:       'Currency',
+    onbSumFx:             'Recorded in {c}. Your wealth is shown in {b} (base currency) using the Aurix exchange rate. Change it in Settings.',
+    onbProgressStep:      'Step {n} of {t}',
+    onbActNote:           'You are recording information about your wealth: Aurix does not move money or access your accounts.',
     onbGoDashboard:       'See my wealth',
     onbWelcomeBullet1:    'Track your evolution',
     onbWelcomeBullet2:    'Understand your exposure',
@@ -84770,9 +84784,21 @@ try {
     document.body.classList.remove('modal-open');
   }
 
+  // «Paso n de 3». Los puntos eran el único indicador y no se podían leer: ahora el
+  // progreso también se dice, en una línea discreta y para el lector de pantalla.
+  const _ONB_PROGRESS = ['LANGUAGE', 'WELCOME', 'ACTIVATION'];
+  function _syncProgressLabel(state) {
+    const el = document.getElementById('onbProgressLabel'); if (!el) return;
+    const i = _ONB_PROGRESS.indexOf(state);
+    el.textContent = i >= 0 ? String(t('onbProgressStep') || '').replace('{n}', String(i + 1)).replace('{t}', String(_ONB_PROGRESS.length)) : '';
+  }
+  // El selector y el formulario de alta son los MISMOS de siempre; sólo cuando se
+  // abren desde el onboarding llevan su piel (`body.onb-addflow`), y se la quitan al volver.
+  function _setAddFlowContext(on) { try { document.body.classList.toggle('onb-addflow', !!on); } catch (_) {} }
   function _openOnboardingOverlay() {
     const ov = _ov();
     if (!ov) return;
+    _setAddFlowContext(false);
     _closeConflictingOverlays();
     ov.classList.add('open');
     ov.setAttribute('aria-hidden', 'false');
@@ -84782,9 +84808,11 @@ try {
     if (snap.state && snap.state !== STATES.COMPLETED) {
       _modal()?.setAttribute('data-step', snap.state);
     }
+    _syncProgressLabel(snap.state);
     // Re-apply i18n in case language was switched after initial render.
     if (typeof applyI18n === 'function') applyI18n();
     _syncSelectionsFromState();
+    if (snap.state === STATES.SUCCESS) _updateSuccessCopy();
   }
 
   function _hideOnboardingOverlay() {
@@ -84840,10 +84868,49 @@ try {
   // n>=2 → "Puedes seguir construyendo …". The chip carries the
   // numeric proof ("Tienes 1 activo" / "Tienes 3 activos") so the
   // user sees their progress at a glance.
+  // EL RESUMEN DICE LO QUE SE REGISTRÓ, y nada más. Categoría, importe y moneda del
+  // activo recién añadido, en SU moneda (sin convertir, sin tipo inventado). Si la
+  // moneda base es otra, se dice que el patrimonio se muestra en la base con el
+  // cambio que la app ya usa — no se publica ningún tipo.
+  let _onbPreIds = null;
+  function _onbSnapshotIds() { try { _onbPreIds = new Set((Array.isArray(assets) ? assets : []).map(a => a && a.id)); } catch (_) { _onbPreIds = null; } }
+  function _onbLastAdded() {
+    const list = Array.isArray(assets) ? assets : [];
+    if (_onbPreIds) { for (let i = list.length - 1; i >= 0; i--) { if (list[i] && !_onbPreIds.has(list[i].id)) return list[i]; } }
+    return list.length ? list[list.length - 1] : null;
+  }
+  function _onbMoney(v, ccy) {
+    try { return new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'es-ES', { style: 'currency', currency: ccy, maximumFractionDigits: 2 }).format(v); }
+    catch (_) { return (Math.round(v * 100) / 100) + ' ' + ccy; }
+  }
+  function _renderSuccessSummary() {
+    const box = document.getElementById('onbSuccessSummary'); if (!box) return;
+    const a = _onbLastAdded();
+    const esc = (typeof _intccEsc === 'function') ? _intccEsc : (x => String(x == null ? '' : x));
+    if (!a) { box.innerHTML = ''; box.hidden = true; return; }
+    const type = a.type || 'other';
+    const cat = (TYPE_META[type] && TYPE_META[type].label) || type;
+    const ccy = String(a.assetCurrency || a.currency || baseCurrency || 'USD').toUpperCase();
+    const qty = Number(a.qty), px = Number(a.price);
+    const amount = (Number.isFinite(qty) && Number.isFinite(px)) ? qty * px : null;
+    const name = (type === 'cash') ? '' : String(a.name || a.ticker || '');
+    const rows = [
+      `<div class="onb-sum-row"><dt>${esc(t('onbSumCategory'))}</dt><dd>${esc(cat)}${name ? ' · ' + esc(name) : ''}</dd></div>`,
+      amount != null && amount > 0 ? `<div class="onb-sum-row"><dt>${esc(t('onbSumAmount'))}</dt><dd>${esc(_onbMoney(amount, ccy))}</dd></div>` : '',
+      `<div class="onb-sum-row"><dt>${esc(t('onbSumCurrency'))}</dt><dd>${esc(ccy)}</dd></div>`,
+    ].join('');
+    const fx = (ccy !== String(baseCurrency || '').toUpperCase())
+      ? `<p class="onb-sum-fx">${esc(String(t('onbSumFx') || '').replace('{c}', ccy).replace('{b}', String(baseCurrency).toUpperCase()))}</p>` : '';
+    box.innerHTML = `<dl class="onb-sum">${rows}</dl>${fx}`;
+    box.hidden = false;
+  }
   function _updateSuccessCopy() {
     const body = document.getElementById('onbSuccessBody');
     const chip = document.getElementById('onbSuccessChip');
     const n = Array.isArray(assets) ? assets.length : 0;
+    const ttl = document.getElementById('onbSuccessTitle');
+    if (ttl) ttl.textContent = (n <= 1 ? t('onbSuccessTitle') : t('onbSuccessTitleN')) || '';
+    _renderSuccessSummary();
     if (body) {
       if (n <= 1) {
         body.textContent = t('onbSuccessBody1') || '';
@@ -84957,6 +85024,7 @@ try {
       // haga falta. El flag se conserva para la telemetría del primer intento.
       awaitingAsset = true;
       _activationAddAttempted = true;
+      _onbSnapshotIds(); _setAddFlowContext(true);
       try { if (typeof window.aurixAnalytics === 'function') window.aurixAnalytics('add_asset_started', { from: 'ACTIVATION' }); } catch (_) {}
       _hideOnboardingOverlay();
       try {
@@ -84985,6 +85053,7 @@ try {
     // re-mounts the overlay once the user submits or cancels.
     if (e.target.closest && e.target.closest('#onbAddAnotherBtn') && _ov()?.classList.contains('open')) {
       awaitingAsset = true;
+      _onbSnapshotIds(); _setAddFlowContext(true);
       _hideOnboardingOverlay();
       try {
         if (typeof openModal === 'function') openModal();
@@ -85002,6 +85071,13 @@ try {
     if (e.target.closest && e.target.closest('#onbGoDashboardBtn') && _ov()?.classList.contains('open')) {
       Eng.completeOnboarding();
       _hideOnboardingOverlay();
+      // Llegada arriba del Dashboard: el alta pudo dejar el documento desplazado.
+      // Y otra vez en el siguiente frame: el cierre del modal restaura su bloqueo de scroll
+      // después de este handler (WebKit), y la posición restaurada no es la de llegada.
+      // WebKit puede desplazar el BODY (overflow propio) en vez de la ventana: se lleva
+      // arriba cualquiera de los dos contenedores posibles.
+      const _toTop = () => { try { window.scrollTo(0, 0); } catch (_) {} [document.scrollingElement, document.documentElement, document.body].forEach(el => { try { if (el) el.scrollTop = 0; } catch (_) {} }); };
+      _toTop(); try { requestAnimationFrame(_toTop); } catch (_) {}
       return;
     }
   });
@@ -85013,6 +85089,7 @@ try {
     if (modal && snap.state && snap.state !== STATES.COMPLETED) {
       modal.setAttribute('data-step', snap.state);
     }
+    _syncProgressLabel(snap.state);
     // ONBOARDING-EXCELLENCE-V1 — el paso que decide la activación merece su propio
     // evento de embudo: es donde se mide la caída entre "vio la invitación" y
     // "abrió Add Asset". Una sola vez por sesión de onboarding.
@@ -85034,6 +85111,7 @@ try {
     }
     if (snap.state === STATES.COMPLETED) {
       _hideOnboardingOverlay();
+      _setAddFlowContext(false);
       // ONBOARDING-WATCHLIST-2: plant the starter watchlist the moment
       // onboarding finishes — only fires if assets and watchlist are
       // both empty and a prior seed hasn't already run. The dashboard
@@ -85102,7 +85180,28 @@ try {
   }
 
   // ── Entry point — called from boot after auth + portfolio load ──
-  async function maybeShowOnboarding() {
+  // ── EL MARCADO DEL ONBOARDING VA DESPUÉS DE app.js ────────────────────
+  // `#onboardingOverlay` está en index.html DETRÁS del <script src="app.js">. Si el
+  // arranque (auth + cartera + precios) termina antes de que el parser llegue a él
+  // —red rápida, caché, o el entorno de demo— `startOnboarding()` marcaba «en curso»
+  // y `_openOnboardingOverlay()` salía en silencio porque el overlay aún no existía:
+  // el onboarding no aparecía en toda la sesión. Se espera al DOM real, no a un
+  // temporizador. Y una sola ejecución a la vez: dos llamadas solapadas (boot y
+  // reset) no pueden arrancar el flujo dos veces.
+  let _maybeShowRunning = null;
+  function _onbDomReady() {
+    if (document.readyState !== 'loading' && _ov()) return Promise.resolve();
+    return new Promise(resolve => {
+      if (document.readyState !== 'loading') { resolve(); return; }
+      document.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
+    });
+  }
+  function maybeShowOnboarding() {
+    if (_maybeShowRunning) return _maybeShowRunning;
+    _maybeShowRunning = _onbDomReady().then(_maybeShowOnboardingNow).finally(() => { _maybeShowRunning = null; });
+    return _maybeShowRunning;
+  }
+  async function _maybeShowOnboardingNow() {
     try {
       // ONBOARDING-1B §6: existing-user guarantee runs BEFORE we even
       // hydrate — if the portfolio already has assets in localStorage,

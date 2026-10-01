@@ -2237,6 +2237,7 @@
       <span class="onb-progress-dot" data-step="WELCOME"></span>
       <span class="onb-progress-dot" data-step="ACTIVATION"></span>
     </div>
+    <p class="onb-progress-label" id="onbProgressLabel" aria-live="polite"></p>
     <!-- ONBOARDING-EXCELLENCE-V1 — "Saltar" ejecutaba `completeOnboarding()`: un toque
          accidental en la esquina cerraba el onboarding PARA SIEMPRE y el usuario podía
          quedarse sin añadir su primer activo. Ahora es "Lo haré más tarde": difiere,
@@ -2404,6 +2405,7 @@
       </div>
       <h2 class="onb-headline" data-i18n="onbActTitle">Añade tu primer activo</h2>
       <p class="onb-sub" data-i18n="onbActSub">Empieza a construir tu visión financiera.</p>
+      <p class="onb-note" data-i18n="onbActNote">Registras información de tu patrimonio: Aurix no mueve dinero ni accede a tus cuentas.</p>
       <div class="onb-footer onb-footer--split">
         <button type="button" class="onb-cta onb-cta--ghost" data-onb-back data-i18n="onbBack">Atrás</button>
         <button type="button" class="onb-cta onb-cta--primary" id="onbAddAssetBtn" data-i18n="onbAddAssetBtn">+ Añadir activo</button>
@@ -2421,13 +2423,14 @@
           <path d="M5 12 L10 17 L19 7"/>
         </svg>
       </div>
-      <h2 class="onb-headline" data-i18n="onbSuccessTitle">Perfecto.</h2>
-      <p class="onb-sub" data-i18n="onbSuccessSub">Tu patrimonio ya está en Aurix.</p>
+      <h2 class="onb-headline" id="onbSuccessTitle">Tu primera posición, registrada</h2>
+      <p class="onb-sub" data-i18n="onbSuccessSub">Ya forma parte de tu visión patrimonial.</p>
+      <div class="onb-success-summary" id="onbSuccessSummary" hidden></div>
       <span class="onb-success-chip" id="onbSuccessChip"></span>
       <p class="onb-sub onb-success-body" id="onbSuccessBody"></p>
       <div class="onb-footer onb-footer--split">
-        <button type="button" class="onb-cta onb-cta--ghost" id="onbGoDashboardBtn" data-i18n="onbGoDashboard">Ver mi patrimonio</button>
-        <button type="button" class="onb-cta onb-cta--primary" id="onbAddAnotherBtn" data-i18n="onbAddAnother">+ Añadir otro activo</button>
+        <button type="button" class="onb-cta onb-cta--ghost" id="onbAddAnotherBtn" data-i18n="onbAddAnother">Añadir otro activo</button>
+        <button type="button" class="onb-cta onb-cta--primary" id="onbGoDashboardBtn" data-i18n="onbGoDashboard">Ver mi patrimonio</button>
       </div>
     </section>
   </div>
