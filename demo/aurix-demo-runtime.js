@@ -22,7 +22,7 @@
   if (window.__AURIX_DEMO_RUNTIME__) return;
 
   var VERSION = '759+';
-  var BUILD = 'v799-ws-usability + propuesta onboarding premium (13cc3bc), no en producción';
+  var BUILD = 'v799-ws-usability + propuesta cierre onboarding (rama onboarding/premium), no en producción';
   var DEMO_CODE = '24681357';
   var K = { state: 'aurix_demo_state_v1', db: 'aurix_demo_db_v1', auth: 'aurix_demo_auth_v1' };
   var API_HOST = 'demo-api.aurix.invalid';
@@ -50,8 +50,8 @@
   DEMO.toast = toast;
   var _toasted = {};
   function toastOnce(key, msg) { if (_toasted[key]) return; _toasted[key] = 1; toast(msg); }
-  var ES = (function () { var l = null; try { l = localStorage.getItem('portfolio_lang'); } catch (_) {} return !/^en/.test(String(l || navigator.language || 'es')); })();
-  var L = function (es, en) { return ES ? es : en; };
+  // El idioma de los avisos de la demo sigue al de la página (que ya resolvió el acceso/app).
+  var L = function (es, en) { var l = ''; try { l = document.documentElement.lang || ''; } catch (_) {} return /^en/i.test(l) ? en : es; };
 
   // LATENCIA DE RED SIMULADA. Una respuesta local llega en el mismo tick, antes de que el
   // navegador termine de parsear la página; el producto asume (como en la red real) que
@@ -218,6 +218,7 @@
       // ACCESO POR CORREO SIMULADO: no se envía nada. El código fijo se enseña en pantalla.
       signInWithOtp: function (o) {
         var em = o && o.email; wr('aurix_demo_otp_email', em || '');
+        DEMO.otpSends = (DEMO.otpSends || 0) + 1;
         toast(L('Demo · no se ha enviado ningún correo. Tu código de prueba es ' + DEMO_CODE + '.', 'Demo · no email was sent. Your test code is ' + DEMO_CODE + '.'));
         return new Promise(function (r) { setTimeout(function () { r({ data: { user: null, session: null }, error: null }); }, 450); });
       },
@@ -262,24 +263,31 @@
     a.textContent = L('Demo · Datos ficticios · ', 'Demo · Fictitious data · ') + 'v' + VERSION + (session() ? ' · ' + (st.plan === 'premium' ? 'Premium' : 'Free') : '');
     document.body.appendChild(a);
     if (/login\.html$/.test(location.pathname)) {
-      var n = document.createElement('div');
+      var n = document.createElement('div'); n.id = 'aurixDemoLoginNote';
       n.className = 'aurix-demo-loginnote'; n.setAttribute('role', 'note');
       n.textContent = L('Demo: escribe cualquier correo (no se envía nada). Código de acceso: ', 'Demo: type any email (nothing is sent). Access code: ') + DEMO_CODE;
       document.body.appendChild(n);
     }
   }
-  var css = '#aurixDemoBadge{position:fixed;z-index:2147483000;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);'
+  var css = '#aurixDemoBadge{position:fixed;z-index:2147483000;left:6px;top:calc(env(safe-area-inset-top,0px) + 4px);font-size:10px!important;'
     + 'font:600 11px/1.2 Inter,system-ui,sans-serif;letter-spacing:.02em;color:#ffd38a;background:rgba(20,16,6,.88);border:1px solid rgba(255,196,96,.45);'
     + 'padding:5px 10px;border-radius:999px;text-decoration:none;white-space:nowrap;pointer-events:auto;opacity:.92}'
-    + '@media (min-width:900px){#aurixDemoBadge{bottom:14px;right:14px}}'
+    + '@media (min-width:900px){#aurixDemoBadge{top:auto;left:auto;bottom:14px;right:14px}}'
     + '#aurixDemoBadge:focus-visible{outline:2px solid #ffd38a;outline-offset:2px}'
     + '.aurix-demo-loginnote{position:fixed;z-index:2147483000;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-width:520px;margin:0 auto;'
     + 'font:500 13px/1.4 Inter,system-ui,sans-serif;color:#ffe2ad;background:rgba(20,16,6,.92);border:1px solid rgba(255,196,96,.45);border-radius:12px;padding:10px 14px;text-align:center}'
-    + 'body:has(.aurix-demo-loginnote) #aurixDemoBadge{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 8px)}'
+    + ''
+    + 'body:has(#aurixDemoLoginNote){padding-bottom:96px}body:has(#aurixDemoLoginNote) #aurixDemoBadge{display:none}'
     + '.aurix-demo-toast{position:fixed;z-index:2147483001;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translateX(-50%);max-width:min(92vw,520px);'
     + 'font:500 13px/1.4 Inter,system-ui,sans-serif;color:#fff3dc;background:rgba(28,22,8,.96);border:1px solid rgba(255,196,96,.5);border-radius:12px;padding:10px 14px;'
     + 'box-shadow:0 10px 30px rgba(0,0,0,.5);transition:opacity .4s}'
     + '.aurix-demo-toast.is-out{opacity:0}';
+  window.addEventListener('aurix:login-lang', function () {
+    var n = document.getElementById('aurixDemoLoginNote');
+    if (n) n.textContent = L('Demo: escribe cualquier correo (no se envía nada). Código de acceso: ', 'Demo: type any email (nothing is sent). Access code: ') + DEMO_CODE;
+    var a = document.getElementById('aurixDemoBadge');
+    if (a) a.textContent = L('Demo · Datos ficticios · ', 'Demo · Fictitious data · ') + 'v' + VERSION;
+  });
   function mount() {
     try { var s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); } catch (_) {}
     badge();

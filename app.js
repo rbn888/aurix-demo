@@ -1604,6 +1604,29 @@ function _touchPrefs() {
 // initialised chart/DOM). The boot render + chart init that run later in the
 // boot sequence read `lang`/`baseCurrency` fresh, so setting the values here is
 // sufficient; applyI18n covers the already-parsed static chrome.
+// ── IDIOMA ELEGIDO EN EL ACCESO ────────────────────────────────────────────
+// `login.html` deja la elección explícita (selector ES|EN o `?lang=` de la landing)
+// en `sessionStorage.aurix_lang_choice` en vez de en `portfolio_lang`, para no hacer
+// pasar por «más reciente» todo el bloque de preferencias locales (incluida la
+// moneda base por defecto) frente a la cuenta. Aquí se ADOPTA por el camino normal
+// de una preferencia explícita (`_touchPrefs`), una sola vez.
+function _aurixSessionLangChoice() {
+  try { const v = sessionStorage.getItem('aurix_lang_choice'); return (v === 'es' || v === 'en') ? v : null; } catch (_) { return null; }
+}
+function _aurixAdoptSessionLangChoice() {
+  const c = _aurixSessionLangChoice(); if (!c) return false;
+  try { sessionStorage.removeItem('aurix_lang_choice'); } catch (_) {}
+  if (c !== lang) {
+    lang = c;
+    try { document.documentElement.lang = lang; } catch (_) {}
+    try { document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('active', b.dataset.lang === lang)); } catch (_) {}
+    try { if (typeof applyI18n === 'function') applyI18n(); } catch (_) {}
+    try { if (typeof applyTypeMetaLabels === 'function') applyTypeMetaLabels(); } catch (_) {}
+  }
+  let stored = null; try { stored = localStorage.getItem(LANG_KEY); } catch (_) {}
+  if (stored !== c) { try { localStorage.setItem(LANG_KEY, c); } catch (_) {} _touchPrefs(); }
+  return true;
+}
 function _applyRemotePrefs(prefs) {
   if (!prefs || typeof prefs !== 'object') return;
   // Language — whitelist to the supported set.
@@ -3736,6 +3759,11 @@ function _mergeRemoteState(remoteRow) {
       _applyRemotePrefs(remotePrefs);
       try { localStorage.setItem(PREFS_TS_KEY, String(remotePrefsTs)); } catch (_) {}
     }
+    // El idioma que el usuario ACABA de elegir en el acceso gana a la preferencia
+    // antigua de la cuenta — y sólo el idioma: la moneda base ya se adoptó arriba.
+    // Sólo con una lectura real de la cuenta (fila presente): con la red caída no se
+    // sabe qué hay guardado y no se escribe nada.
+    if (remoteRow && typeof remoteRow === 'object') { try { _aurixAdoptSessionLangChoice(); } catch (_) {} }
 
     // ── UI state (workspace + card/category order), last-write-wins. Same legacy
     //    guard as preferences: an explicit unstamped local state becomes
@@ -4731,7 +4759,19 @@ async function requireAuth() {
 
 // ── Internationalisation ───────────────────────────────────
 const LANG_KEY = 'portfolio_lang';
-let lang = localStorage.getItem(LANG_KEY) || 'es';
+// Precedencia (la misma que el acceso): elección explícita de esta sesión → preferencia
+// guardada → pista de la landing / idioma del navegador que el acceso dejó en sesión →
+// idioma del navegador (es/es-* → español; si no, inglés).
+let lang = (function () {
+  const ok = v => (v === 'es' || v === 'en') ? v : null;
+  try {
+    const c = ok(sessionStorage.getItem('aurix_lang_choice')); if (c) return c;
+  } catch (_) {}
+  try { const sv = ok(localStorage.getItem(LANG_KEY)); if (sv) return sv; } catch (_) {}
+  try { const h = ok(sessionStorage.getItem('aurix_lang_hint')); if (h) return h; } catch (_) {}
+  try { return /^es(?:$|[-_])/i.test(String(navigator.language || '')) ? 'es' : 'en'; } catch (_) {}
+  return 'es';
+})();
 
 const T = {
   es: {
@@ -7835,6 +7875,7 @@ const T = {
     onbSumCurrency:       'Moneda',
     onbSumFx:             'Registrado en {c}. Tu patrimonio se muestra en {b} (moneda base) con el tipo de cambio de Aurix. Cámbiala en Ajustes.',
     onbProgressStep:      'Paso {n} de {t}',
+    onbCatExamplesAria:   'Aurix reúne, por ejemplo',
     onbActNote:           'Registras información de tu patrimonio: Aurix no mueve dinero ni accede a tus cuentas.',
     onbGoDashboard:       'Ver mi patrimonio',
     onbWelcomeBullet1:    'Sigue tu evolución',
@@ -10701,6 +10742,7 @@ const T = {
     onbSumCurrency:       'Currency',
     onbSumFx:             'Recorded in {c}. Your wealth is shown in {b} (base currency) using the Aurix exchange rate. Change it in Settings.',
     onbProgressStep:      'Step {n} of {t}',
+    onbCatExamplesAria:   'Aurix brings together, for example',
     onbActNote:           'You are recording information about your wealth: Aurix does not move money or access your accounts.',
     onbGoDashboard:       'See my wealth',
     onbWelcomeBullet1:    'Track your evolution',
@@ -10962,6 +11004,8 @@ function switchLang(newLang) {
   if (newLang === lang) return;
   lang = newLang;
   localStorage.setItem(LANG_KEY, lang);
+  // Una elección hecha DENTRO de la app sustituye a la que trajo el acceso.
+  try { sessionStorage.removeItem('aurix_lang_choice'); } catch (_) {}
   // AURIX-LAUNCH-P0-PERSISTENCE: stamp + flush so this explicit choice wins.
   try { _touchPrefs(); } catch (_) {}
   // SPEC GLOBAL-LANGUAGE — switchLang is the SINGLE owner. Propagate to the onboarding
@@ -84786,7 +84830,10 @@ try {
 
   // «Paso n de 3». Los puntos eran el único indicador y no se podían leer: ahora el
   // progreso también se dice, en una línea discreta y para el lector de pantalla.
-  const _ONB_PROGRESS = ['LANGUAGE', 'WELCOME', 'ACTIVATION'];
+  const _ONB_PROGRESS = ['WELCOME', 'ACTIVATION'];
+  function _syncLangToggle() {
+    try { document.querySelectorAll('[data-onb-langswitch]').forEach(b => { const on = b.getAttribute('data-onb-langswitch') === lang; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }); } catch (_) {}
+  }
   function _syncProgressLabel(state) {
     const el = document.getElementById('onbProgressLabel'); if (!el) return;
     const i = _ONB_PROGRESS.indexOf(state);
@@ -84809,6 +84856,7 @@ try {
       _modal()?.setAttribute('data-step', snap.state);
     }
     _syncProgressLabel(snap.state);
+    _syncLangToggle();
     // Re-apply i18n in case language was switched after initial render.
     if (typeof applyI18n === 'function') applyI18n();
     _syncSelectionsFromState();
@@ -84942,6 +84990,16 @@ try {
   // ── Step navigation handlers ───────────────────────────────────
   // Language selection
   document.addEventListener('click', e => {
+    // Cambio discreto ES|EN de la cabecera: el owner único `switchLang` (persiste, sincroniza
+    // con el motor y repinta). El paso y lo ya elegido se conservan.
+    const sw = e.target.closest && e.target.closest('[data-onb-langswitch]');
+    if (sw && _ov()?.classList.contains('open')) {
+      const to = sw.getAttribute('data-onb-langswitch');
+      try { if ((to === 'es' || to === 'en') && to !== lang && typeof switchLang === 'function') switchLang(to); } catch (_) {}
+      _syncLangToggle(); _syncProgressLabel(Eng.getSnapshot().state);
+      if (Eng.getSnapshot().state === STATES.SUCCESS) _updateSuccessCopy();
+      return;
+    }
     const langBtn = e.target.closest && e.target.closest('[data-onb-lang]');
     if (langBtn && _ov()?.classList.contains('open')) {
       pendingLang = langBtn.dataset.onbLang;
@@ -85249,6 +85307,9 @@ try {
         _openOnboardingOverlay();
       } else {
         Eng.startOnboarding();
+        // El idioma ya viene elegido (acceso o preferencia): se registra en el motor sin
+        // pedirlo otra vez — antes lo hacía la pantalla LANGUAGE, que se retira.
+        try { if (!Eng.getSnapshot().language && (lang === 'es' || lang === 'en')) Eng.setLanguage(lang); } catch (_) {}
         _openOnboardingOverlay();
       }
     } catch (err) {

@@ -45,8 +45,9 @@
   //   • EXPERIENCE → `experience` no gobernaba ningún comportamiento.
   //   • PROFILE    → `ageBand` tampoco, y `riskProfile` sólo matizaba el tono de
   //                  una frase: no se pregunta antes de haber entregado valor.
+  // ONBOARDING · CIERRE — LANGUAGE sale del recorrido: el idioma se elige en el acceso
+  // (selector ES|EN) y el onboarding conserva un cambio discreto ES|EN en su cabecera.
   const ORDER = [
-    STATES.LANGUAGE,
     STATES.WELCOME,
     STATES.ACTIVATION,
     STATES.SUCCESS,
@@ -57,6 +58,7 @@
   // el que aún no había elegido intereses vuelve a WELCOME (allí están), y el que
   // ya los eligió sigue hacia ACTIVATION, que es lo único que le queda por hacer.
   const RETIRED_STEP_MIGRATION = Object.freeze({
+    [STATES.LANGUAGE]:   STATES.WELCOME,
     [STATES.INTERESTS]:  STATES.WELCOME,
     [STATES.EXPERIENCE]: STATES.ACTIVATION,
     [STATES.PROFILE]:    STATES.ACTIVATION,
@@ -246,7 +248,8 @@
         .single();
       if (error || !data) return null;
       return {
-        state:        data.onboarding_completed ? STATES.COMPLETED : (data.onboarding_step || STATES.NOT_STARTED),
+        // Un paso retirado guardado en la cuenta (p. ej. LANGUAGE) se lee migrado.
+        state:        data.onboarding_completed ? STATES.COMPLETED : _migrateRetiredStep(data.onboarding_step || STATES.NOT_STARTED),
         completed:    !!data.onboarding_completed,
         language:     data.preferred_language || null,
         interests:    Array.isArray(data.tracked_asset_types) ? data.tracked_asset_types : [],
@@ -303,7 +306,7 @@
     if (window._aurixOnboardingInProgress) return getSnapshot();
     window._aurixOnboardingGeneration++;
     window._aurixOnboardingInProgress = true;
-    _state = { ..._state, state: STATES.LANGUAGE, completed: false };
+    _state = { ..._state, state: STATES.WELCOME, completed: false };
     _writeLocal(_state);
     _analytics('onboarding_started', {});
     _emitState();
@@ -327,7 +330,7 @@
 
   function nextStep() {
     const idx = ORDER.indexOf(_state.state);
-    if (idx < 0) return setStep(STATES.LANGUAGE);
+    if (idx < 0) return setStep(STATES.WELCOME);
     const next = ORDER[idx + 1];
     if (!next) return completeOnboarding();
     return setStep(next);

@@ -301,6 +301,16 @@
     button.auth-link, .auth-link { min-height: 40px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; color: rgba(160,190,255,.92); }
     .auth-error { font-size: 12.5px; }
     @media (max-height: 640px) { body { align-items: flex-start; } }
+    .beta-card { position: relative; }
+    .beta-card .beta-access-label { padding: 0; margin-top: 30px; }
+    .lg-lang { position: absolute; top: 12px; right: 12px; display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px;
+      background: rgba(255,255,255,.035); border: 1px solid rgba(120,160,255,.20); z-index: 2; }
+    .lg-lang-btn { min-width: 40px; min-height: 36px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+      font: 700 12.5px/1 inherit; letter-spacing: .06em; color: rgba(214,224,245,.70); position: relative; }
+    .lg-lang-btn::after { content: ''; position: absolute; inset: -4px -2px; }
+    .lg-lang-btn.is-on { background: rgba(74,130,240,.28); color: #fff; box-shadow: 0 0 0 1px rgba(120,170,255,.55) inset; }
+    .lg-lang-btn:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 2px; }
+
     @media (prefers-reduced-motion: reduce) { body::after { animation: none; } }
   </style>
 </head>
@@ -313,6 +323,10 @@
     </div>
 
     <div class="beta-card">
+      <div class="lg-lang" role="group" aria-label="Idioma · Language">
+        <button type="button" class="lg-lang-btn" data-lg-lang="es" lang="es" aria-pressed="false">ES</button>
+        <button type="button" class="lg-lang-btn" data-lg-lang="en" lang="en" aria-pressed="false">EN</button>
+      </div>
       <!-- M.06 · IDENTITY — este markup servía el estado de BETA PRIVADA (etiqueta y copy de
            invitación, `authSection` con clase `locked`, y `#email`/`#auth-submit` con `disabled`)
            y sólo un script inline POSTERIOR lo abría. Si ese script fallaba —un error anterior en
@@ -612,15 +626,31 @@
     // M.03 · B — MISMA precedencia que index.html: `?lang=` es una elección
     // EXPLÍCITA y gana; `?langhint=` es sólo el idioma con el que se mostraba la
     // landing y se aplica únicamente si este contenedor no tiene preferencia.
-    const LOGIN_LANG = (function () {
+    // ── IDIOMA DESDE EL ACCESO (ONBOARDING · CIERRE) ─────────────────────────
+    // Precedencia: elección EXPLÍCITA (`?lang=` de la landing o el selector ES|EN de
+    // esta tarjeta) → preferencia guardada (`portfolio_lang`) → `?langhint=` → idioma
+    // del navegador (es/es-* → español; cualquier otro → inglés). Sólo ES/EN.
+    // NO se escribe `portfolio_lang` aquí: esa clave hace que la app trate sus
+    // preferencias locales como más recientes que las de la cuenta y, en un navegador
+    // nuevo, ignoraría también la moneda base guardada de una cuenta existente. La
+    // elección viaja en `sessionStorage` (`aurix_lang_choice`) y la app la adopta tras
+    // leer la cuenta, por su camino normal de preferencia explícita; la pista y el
+    // idioma del navegador (`aurix_lang_hint`) sólo rellenan el vacío.
+    const _LG_CHOICE_KEY = 'aurix_lang_choice', _LG_HINT_KEY = 'aurix_lang_hint';
+    function _lgNorm(v) { const b = String(v == null ? '' : v).trim().toLowerCase().split(/[-_]/)[0]; return (b === 'es' || b === 'en') ? b : null; }
+    let LOGIN_LANG = (function () {
       try {
         const q = new URLSearchParams(location.search);
-        const p = q.get('lang');
-        if (p === 'en' || p === 'es') { localStorage.setItem('portfolio_lang', p); return p; }
-        const s = localStorage.getItem('portfolio_lang');
-        if (s === 'en' || s === 'es') return s;
-        const h = q.get('langhint');
-        if (h === 'en' || h === 'es') { localStorage.setItem('portfolio_lang', h); return h; }
+        const p = _lgNorm(q.get('lang'));
+        if (p) { try { sessionStorage.setItem(_LG_CHOICE_KEY, p); } catch (_) {} return p; }
+        let c = null; try { c = _lgNorm(sessionStorage.getItem(_LG_CHOICE_KEY)); } catch (_) {}
+        if (c) return c;
+        const s = _lgNorm(localStorage.getItem('portfolio_lang'));
+        if (s) return s;
+        const h = _lgNorm(q.get('langhint')) || _lgNorm(navigator.language) || 'en';
+        const r = (h === 'es') ? 'es' : 'en';
+        try { sessionStorage.setItem(_LG_HINT_KEY, r); } catch (_) {}
+        return r;
       } catch (_) {}
       return 'es';
     })();
@@ -702,6 +732,44 @@
       }
     };
     function tL(k) { return (LOGIN_I18N[LOGIN_LANG] && LOGIN_I18N[LOGIN_LANG][k]) || LOGIN_I18N.es[k] || ''; }
+    // Cambiar de idioma SIN recargar: los textos fijos se repintan por `data-i18n` y los
+    // que el script escribió (errores, estados de botón, cuenta atrás) se traducen
+    // buscando qué clave del idioma anterior los produjo. Ningún campo se borra, no se
+    // reenvía nada y los plazos siguen corriendo: sólo cambia el texto.
+    function _lgReverse(text, from) {
+      const dict = LOGIN_I18N[from] || {}; const tx = String(text || '').trim(); if (!tx) return null;
+      for (const k in dict) {
+        const v = dict[k]; if (typeof v !== 'string') continue;
+        if (v.trim() === tx) return { k: k };
+        if (v.indexOf('{n}') >= 0) {
+          const re = new RegExp('^' + v.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('\\{n\\}', '(\\d+)') + '$');
+          const m = re.exec(tx); if (m) return { k: k, n: m[1] };
+        }
+      }
+      return null;
+    }
+    // `explicit`: sólo una pulsación del usuario (o `?lang=`) es una ELECCIÓN. Pintar el
+    // idioma deducido (preferencia, pista o navegador) no puede guardarse como elección:
+    // la app la adoptaría en la cuenta y eso sería alterarla en silencio.
+    function setLoginLang(next, explicit) {
+      const to = _lgNorm(next); if (!to) return;
+      if (explicit) { try { sessionStorage.setItem(_LG_CHOICE_KEY, to); } catch (_) {} }
+      if (to !== LOGIN_LANG) {
+        const from = LOGIN_LANG;
+        const dyn = ['auth-error', 'otp-error', 'auth-submit', 'otp-submit', 'otp-resend'].map(id => document.getElementById(id)).filter(Boolean)
+          .map(el => ({ el: el, hit: el.hasAttribute('data-i18n') ? null : _lgReverse(el.innerText, from) }));
+        LOGIN_LANG = to;
+        document.documentElement.lang = to;
+        applyLoginI18n();
+        dyn.forEach(d => { if (d.hit) { const v = tL(d.hit.k); d.el.innerText = d.hit.n != null ? v.replace('{n}', d.hit.n) : v; } });
+      }
+      document.querySelectorAll('[data-lg-lang]').forEach(b => { const on = b.getAttribute('data-lg-lang') === LOGIN_LANG; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      try { window.dispatchEvent(new CustomEvent('aurix:login-lang', { detail: { lang: LOGIN_LANG } })); } catch (_) {}
+    }
+    document.addEventListener('click', function (e) {
+      const b = e.target && e.target.closest && e.target.closest('[data-lg-lang]');
+      if (b) { e.preventDefault(); setLoginLang(b.getAttribute('data-lg-lang'), true); }
+    });
     function applyLoginI18n() {
       const tt = tL('lg.title'); if (tt) document.title = tt;
       document.querySelectorAll('[data-i18n]').forEach(function (n) {
@@ -712,6 +780,7 @@
       });
     }
     applyLoginI18n();
+    setLoginLang(LOGIN_LANG);
 
     const _SAFE_REDIRECT_TARGETS = new Set([
       'index.html',

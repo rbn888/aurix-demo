@@ -50,7 +50,8 @@
   }
   function start(kind, plan) {
     wipe();
-    set('portfolio_lang', lang());
+    // El idioma de la app NO lo fija el panel: el acceso lo resuelve como en producción
+    // (elección → preferencia guardada → navegador) y ofrece su selector ES|EN.
     set('aurix_demo_state_v1', { plan: plan, persona: kind, startedAt: Date.now() });
     if (kind === 'onboarding') { location.href = 'login.html'; return; }
     var s = R.mkSession('demo@aurix.invalid');

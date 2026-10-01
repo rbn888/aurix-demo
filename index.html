@@ -538,9 +538,21 @@
       var _qs = new URLSearchParams(location.search);
       var _p = _qs.get('lang'), _h = _qs.get('langhint');
       var _s = localStorage.getItem('portfolio_lang');
-      if (_p === 'en' || _p === 'es') localStorage.setItem('portfolio_lang', _p);
-      else if ((_h === 'en' || _h === 'es') && _s !== 'en' && _s !== 'es') localStorage.setItem('portfolio_lang', _h);
-      var lang = localStorage.getItem('portfolio_lang') || 'es';
+      // ONBOARDING · CIERRE — las dos se guardan en SESIÓN, no en `portfolio_lang`: escribir
+      // esa clave antes de leer la cuenta hacía pasar por «más recientes» TODAS las
+      // preferencias locales (también la moneda base por defecto). La elección explícita la
+      // adopta app.js tras leer la cuenta; la pista sólo rellena el vacío.
+      _p = (_p || '').toLowerCase().split(/[-_]/)[0]; _h = (_h || '').toLowerCase().split(/[-_]/)[0];
+      try {
+        if (_p === 'en' || _p === 'es') sessionStorage.setItem('aurix_lang_choice', _p);
+        else if ((_h === 'en' || _h === 'es') && _s !== 'en' && _s !== 'es') sessionStorage.setItem('aurix_lang_hint', _h);
+      } catch (_) {}
+      // Misma precedencia que app.js (`let lang`): elección de esta sesión → guardada →
+      // pista/navegador dejados por el acceso → navegador.
+      var _ok = function (v) { return (v === 'es' || v === 'en') ? v : null; };
+      var _ss = function (k) { try { return sessionStorage.getItem(k); } catch (_) { return null; } };
+      var lang = _ok(_ss('aurix_lang_choice')) || _ok(localStorage.getItem('portfolio_lang')) || _ok(_ss('aurix_lang_hint'))
+        || (/^es(?:$|[-_])/i.test(String(navigator.language || '')) ? 'es' : 'en');
       document.documentElement.lang = lang;
     } catch (_) {}
   })();
@@ -1748,7 +1760,7 @@
   <script src="ai/insightEngine.js"></script>
   <script src="config.js"></script>
   <script src="services/ux.js"></script>
-  <script src="services/onboarding-engine.js?v=2"></script>
+  <script src="services/onboarding-engine.js?v=3"></script>
   <!-- AURIX-PORTFOLIO-CHART-ENGINE-1 · Fase D: Portfolio Chart Engine (PCE).
        Load order = engine → price-layer → net-worth → adapter (ascending deps).
        `defer` so boot is uninterrupted; their globals are only used lazily at
@@ -2231,40 +2243,26 @@
      persistence live in services/onboarding-engine.js; UI wiring lives
      in app.js (see _initOnboardingUI). -->
 <div class="modal-overlay onboarding-overlay" id="onboardingOverlay" aria-hidden="true">
-  <div class="modal modal--onboarding" role="dialog" aria-modal="true" aria-labelledby="onbTitle" data-step="LANGUAGE">
+  <div class="modal modal--onboarding" role="dialog" aria-modal="true" aria-labelledby="onbTitle" data-step="WELCOME">
     <div class="onb-progress" id="onbProgress" aria-hidden="true">
-      <span class="onb-progress-dot" data-step="LANGUAGE"></span>
       <span class="onb-progress-dot" data-step="WELCOME"></span>
       <span class="onb-progress-dot" data-step="ACTIVATION"></span>
     </div>
     <p class="onb-progress-label" id="onbProgressLabel" aria-live="polite"></p>
+    <!-- ONBOARDING · CIERRE — el idioma ya se elige en el acceso; aquí queda un cambio discreto
+         ES|EN (también para quien entra sin pasar por el login). Usa `switchLang`, el owner único. -->
+    <div class="onb-langtoggle" role="group" aria-label="Idioma · Language">
+      <button type="button" class="onb-langtoggle-btn" data-onb-langswitch="es" lang="es" aria-pressed="false">ES</button>
+      <button type="button" class="onb-langtoggle-btn" data-onb-langswitch="en" lang="en" aria-pressed="false">EN</button>
+    </div>
     <!-- ONBOARDING-EXCELLENCE-V1 — "Saltar" ejecutaba `completeOnboarding()`: un toque
          accidental en la esquina cerraba el onboarding PARA SIEMPRE y el usuario podía
          quedarse sin añadir su primer activo. Ahora es "Lo haré más tarde": difiere,
          conserva el progreso y el onboarding se reanuda en la siguiente entrada. -->
     <button type="button" class="onb-skip" id="onbSkipBtn" data-i18n="onbLater">Lo haré más tarde</button>
 
-    <!-- Step: LANGUAGE — first screen always. No localised copy: bilingual. -->
-    <section class="onb-step" data-onb-step="LANGUAGE">
-      <h2 id="onbTitle" class="onb-headline">
-        <span class="onb-headline-line">Selecciona tu idioma</span>
-        <span class="onb-headline-line onb-headline-line--alt">Choose your language</span>
-      </h2>
-      <div class="onb-lang-grid">
-        <button type="button" class="onb-lang-card" data-onb-lang="es">
-          <span class="onb-lang-name">Español</span>
-          <span class="onb-lang-native">ES</span>
-        </button>
-        <button type="button" class="onb-lang-card" data-onb-lang="en">
-          <span class="onb-lang-name">English</span>
-          <span class="onb-lang-native">EN</span>
-        </button>
-      </div>
-      <div class="onb-footer">
-        <button type="button" class="onb-cta onb-cta--primary" id="onbLangContinue" disabled data-i18n="onbContinue">Continuar</button>
-      </div>
-    </section>
-
+    <!-- ONBOARDING · CIERRE — el paso LANGUAGE se retira (el estado guardado se migra a WELCOME en
+         el motor). El idioma se elige en el acceso y se cambia con el selector de la cabecera. -->
     <!-- Step: WELCOME -->
     <section class="onb-step" data-onb-step="WELCOME">
       <!-- SPEC 45 WELCOME — convergence hero: scattered points merge into one Aurix core (once), a literal
@@ -2278,7 +2276,7 @@
         <span class="onb-wh-dot"></span>
         <span class="onb-wh-dot"></span>
       </div>
-      <h2 class="onb-headline" data-i18n="onbWelcomeTitle">Todo tu patrimonio. Una sola visión.</h2>
+      <h2 id="onbTitle" class="onb-headline" data-i18n="onbWelcomeTitle">Todo tu patrimonio. Una sola visión.</h2>
       <p class="onb-sub" data-i18n="onbWelcomeSub">Aurix reúne tus activos y transforma información dispersa en claridad patrimonial.</p>
       <!-- ONBOARDING-EXCELLENCE-V1 — INTERESES FUSIONADOS EN LA BIENVENIDA.
            Antes eran dos pantallas: una que sólo se leía (WELCOME) y otra que sólo
@@ -2295,15 +2293,17 @@
         <span class="onb-wr-arrow">→</span>
         <span class="onb-wr-step" data-i18n="onbWelcomeRail3">Decidir</span>
       </div>
-      <p class="onb-sub onb-interests-lead" data-i18n="onbInterestsLead">¿Qué quieres controlar?</p>
-      <div class="onb-chip-grid" id="onbInterestsGrid">
-        <button type="button" class="onb-chip" data-onb-interest="stocks"      data-i18n="onbAssetStocks">Acciones</button>
-        <button type="button" class="onb-chip" data-onb-interest="crypto"      data-i18n="onbAssetCrypto">Cripto</button>
-        <button type="button" class="onb-chip" data-onb-interest="etf"         data-i18n="onbAssetEtf">ETFs</button>
-        <button type="button" class="onb-chip" data-onb-interest="metal"       data-i18n="onbAssetGold">Oro</button>
-        <button type="button" class="onb-chip" data-onb-interest="cash"        data-i18n="onbAssetCash">Liquidez</button>
-        <button type="button" class="onb-chip" data-onb-interest="real_estate" data-i18n="onbAssetRe">Inmuebles</button>
-      </div>
+      <!-- ONBOARDING · CIERRE — «¿Qué quieres controlar?» se retira: los intereses sólo sembraban la
+           lista de Market si se terminaba con la cartera vacía, que el recorrido normal nunca alcanza.
+           Las categorías quedan como EJEMPLOS no interactivos. Las preferencias ya guardadas no se tocan. -->
+      <ul class="onb-cat-examples" aria-label="Aurix reúne" data-i18n-aria="onbCatExamplesAria">
+        <li style="--onb-cat:#f08a3c" data-i18n="onbAssetStocks">Acciones</li>
+        <li style="--onb-cat:#4d8dff" data-i18n="onbAssetCrypto">Cripto</li>
+        <li style="--onb-cat:#2ec5d8" data-i18n="onbAssetEtf">ETFs</li>
+        <li style="--onb-cat:#e2b45a" data-i18n="onbAssetGold">Oro</li>
+        <li style="--onb-cat:#34d17e" data-i18n="onbAssetCash">Liquidez</li>
+        <li style="--onb-cat:#9b7dff" data-i18n="onbAssetRe">Inmuebles</li>
+      </ul>
       <div class="onb-footer">
         <button type="button" class="onb-cta onb-cta--primary" data-onb-next data-i18n="onbContinue">Continuar</button>
       </div>
