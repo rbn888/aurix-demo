@@ -119,14 +119,11 @@
   function db() { return rd(K.db, {}); }
   // CATÁLOGO DE PRECIOS SIMULADO: copia del catálogo de producción verificado el 2026-10-08
   // (billing_prices: 7,99 €/mes · 69,99 €/año, sin prueba) para que el paywall muestre sus planes.
+  // Es un valor por defecto de LECTURA (no se escribe nada: «Reiniciar» deja el navegador vacío).
   // Comprar sigue DESHABILITADO en la demo (la API de cobro responde «demo»): nada llega a Stripe.
-  (function seedPrices() {
-    var d = db(); if (Array.isArray(d.billing_prices) && d.billing_prices.length) return;
-    d.billing_prices = [
-      { provider: 'stripe', provider_price_id: 'demo_price_month', plan: 'premium', billing_interval: 'month', amount_cents: 799, currency: 'EUR', trial_days: 0, active: true },
-      { provider: 'stripe', provider_price_id: 'demo_price_year', plan: 'premium', billing_interval: 'year', amount_cents: 6999, currency: 'EUR', trial_days: 0, active: true } ];
-    saveDb(d);
-  })();
+  var DEMO_PRICES = [
+    { provider: 'stripe', provider_price_id: 'demo_price_month', plan: 'premium', billing_interval: 'month', amount_cents: 799, currency: 'EUR', trial_days: 0, active: true },
+    { provider: 'stripe', provider_price_id: 'demo_price_year', plan: 'premium', billing_interval: 'year', amount_cents: 6999, currency: 'EUR', trial_days: 0, active: true } ];
   function saveDb(d) { wr(K.db, d); }
   function session() { return rd(K.auth, null); }
   var listeners = [];
@@ -174,7 +171,7 @@
   Q._run = function () {
     var s = session();
     if (!s) return { data: null, error: { message: 'JWT missing', code: '401' }, status: 401 };
-    var uid = s.user.id, all = db(), rows = all[this.t] || [];
+    var uid = s.user.id, all = db(), rows = all[this.t] || ((this.t === 'billing_prices') ? DEMO_PRICES : []);
     // RLS de la demo: cada visitante sólo ve sus filas, igual que en producción.
     var mine = function (r) { return !('user_id' in r) || r.user_id === uid; };
     var self = this, sel = rows.filter(mine).filter(function (r) { return self.f.every(function (f) { return match(r, f); }); });
