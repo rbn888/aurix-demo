@@ -25,13 +25,21 @@
     { id: 'demo_eth',  ticker: 'ETH',  name: 'Ethereum',  type: 'crypto', qty: 1.5,  price: 3000,  assetCurrency: 'USD' },
     { id: 'demo_cash', ticker: 'USD',  name: 'Efectivo',  type: 'cash',   qty: 6500, price: 1,     assetCurrency: 'USD' },
   ];
+  // Compra única hace 90 días (el inicio del histórico), a un precio modesto por debajo del actual:
+  // la ganancia por posición (≈ +3,5 % … +5,3 %) cuadra con la subida del ≈ 4 % del histórico.
+  var BUY = { demo_msft: 395, demo_aapl: 182, demo_vwce: 114, demo_btc: 59000, demo_eth: 2850 };
+  var BUY_TS = Date.now() - 90 * 86400000;
+  ASSETS.forEach(function (a) { if (BUY[a.id]) a.transactions = [{ type: 'buy', qty: a.qty, price: BUY[a.id], ts: BUY_TS }]; });
   function history(days) {
     var now = Date.now(), hist = [], cats = [];
-    var w = { stock: 0.49, etf: 0.14, crypto: 0.24, liquidity: 0.13 };
+    // Pesos por categoría DERIVADOS de las propias posiciones (antes eran fijos y no cuadraban con ellas).
     var total0 = ASSETS.reduce(function (s, a) { return s + a.qty * a.price; }, 0);
+    var w = { stock: 0, etf: 0, crypto: 0, liquidity: 0 };
+    ASSETS.forEach(function (a) { var k = a.type === 'cash' ? 'liquidity' : a.type; w[k] = (w[k] || 0) + a.qty * a.price / total0; });
     for (var i = days; i >= 0; i--) {
       var frac = 1 - i / days;
-      var total = total0 * (0.9 + 0.1 * frac + Math.sin(frac * 9) * 0.012);
+      // Historial DE EJEMPLO moderado que termina exactamente en el valor actual (sin inflar resultados).
+      var total = total0 * (0.96 + 0.04 * frac + Math.sin(frac * 9) * 0.006 * (1 - frac));
       var ts = Math.round(now - i * DAY);
       hist.push({ ts: ts, value: +total.toFixed(2) });
       var row = { ts: ts, total: +total.toFixed(2), crypto: 0, stock: 0, etf: 0, fund: 0, metal: 0, real_estate: 0, liquidity: 0, other: 0 };
@@ -63,6 +71,8 @@
       set('portfolio_assets', ASSETS);
       set('portfolio_history', h.hist);
       set('category_history', h.cats);
+      // Orden REAL del Dashboard (misma clave que guarda la app al reordenar): acciones y cripto primero.
+      set('portfolio_cat_order', ['stock', 'crypto', 'etf', 'metal', 'real_estate', 'cash']);
       var d = JSON.parse(localStorage.getItem('aurix_demo_db_v1') || '{}');
       d.user_portfolios = [{ user_id: uid, assets: ASSETS, holdings: [], portfolio_history: h.hist, category_history: h.cats, updated_at: new Date().toISOString() }];
       set('aurix_demo_db_v1', d);

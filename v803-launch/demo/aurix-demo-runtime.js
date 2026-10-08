@@ -21,7 +21,7 @@
   'use strict';
   if (window.__AURIX_DEMO_RUNTIME__) return;
 
-  var VERSION = '762';
+  var VERSION = '763';
   var BUILD = 'v803-launch';
   var DEMO_CODE = '24681357';
   var K = { state: 'aurix_demo_state_v1', db: 'aurix_demo_db_v1', auth: 'aurix_demo_auth_v1' };
@@ -276,10 +276,10 @@
       document.body.appendChild(n);
     }
   }
-  var css = '#aurixDemoBadge{position:fixed;z-index:2147483000;left:6px;top:calc(env(safe-area-inset-top,0px) + 4px);font-size:10px!important;'
+  var css = '#aurixDemoBadge{position:fixed;z-index:2147483000;left:6px;bottom:calc(env(safe-area-inset-bottom,0px) + 72px);font-size:10px!important;'
     + 'font:600 11px/1.2 Inter,system-ui,sans-serif;letter-spacing:.02em;color:#ffd38a;background:rgba(20,16,6,.88);border:1px solid rgba(255,196,96,.45);'
     + 'padding:5px 10px;border-radius:999px;text-decoration:none;white-space:nowrap;pointer-events:auto;opacity:.92}'
-    + '@media (min-width:900px){#aurixDemoBadge{top:auto;left:auto;bottom:14px;right:14px}}'
+    + '@media (min-width:900px){#aurixDemoBadge{left:auto;bottom:14px;right:14px}}'
     + '#aurixDemoBadge:focus-visible{outline:2px solid #ffd38a;outline-offset:2px}'
     + '.aurix-demo-loginnote{position:fixed;z-index:2147483000;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-width:520px;margin:0 auto;'
     + 'font:500 13px/1.4 Inter,system-ui,sans-serif;color:#ffe2ad;background:rgba(20,16,6,.92);border:1px solid rgba(255,196,96,.45);border-radius:12px;padding:10px 14px;text-align:center}'

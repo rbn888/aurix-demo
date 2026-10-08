@@ -661,7 +661,7 @@ try { if (typeof window !== 'undefined') _aurixInstallDiagnosticsShare(window); 
 // APPJS_V y que el `app.js?v=` que index solicita. Si se queda atrás, `executedVersion`
 // nunca iguala a `expected`, la coherencia es imposible y el aviso "nueva versión
 // disponible" se queda fijo para siempre por muchas recargas que haga el usuario.
-try { if (typeof window !== 'undefined') window.__AURIX_APPJS_VERSION__ = '762'; } catch (_) {}
+try { if (typeof window !== 'undefined') window.__AURIX_APPJS_VERSION__ = '763'; } catch (_) {}
 
 // ── OWNER ÚNICO DEL AVISO "NUEVA VERSIÓN DISPONIBLE" ────────────────────────────
 // Esta app NO tiene Service Worker: todas las referencias a `navigator.serviceWorker` sólo
@@ -28954,11 +28954,31 @@ function _wsBudgetPeriodHtml(inp) {
           + esc(k === cur ? _wsPeriodLabelShort(k) : _wsPeriodLabel(k)) + '</option>').join('')
     + '</select></label>';
 }
+// Moneda del presupuesto en la cabecera compacta: selector si el documento es nuevo y sin
+// operaciones propias (mismo manejador `data-wsccy-scope` de siempre), valor fijo si no.
+function _wsBudgetCcyCtlHtml() {
+  const esc = _intccEsc, c = _wsDocCcy();
+  if (!c) return '';
+  const lbl = '<span class="wsbud-perchip-lbl">' + esc(t('wsccy_label')) + '</span>';
+  if (!_wsToolCcyEditable()) return '<div class="wsbud-perchip wsbud-ccychip">' + lbl + '<span class="wsbud-ccy-fixed">' + esc(c) + '</span></div>';
+  const list = _WS_DOC_CCYS.indexOf(c) >= 0 ? _WS_DOC_CCYS : _WS_DOC_CCYS.concat([c]);
+  return '<label class="wsbud-perchip wsbud-ccychip">' + lbl
+    + '<select class="wsbud-perchip-sel" data-wsccy-scope="tool" data-wsccy-id="" aria-label="' + esc(t('wsccy_label')) + '">'
+    + list.map(x => '<option value="' + x + '"' + (x === c ? ' selected' : '') + '>' + x + '</option>').join('')
+    + '</select></label>';
+}
 function _wsBudgetTopHtml(inp) {
   const esc = _intccEsc;
   const res = calculateMonthlyBudget(inp);
   return `
     <div class="wsbud-top">
+      ${/* SPEC 2 · CABECERA COMPACTA: moneda y periodo juntos, encima de las cifras que califican.
+            La moneda ocupaba antes una fila casi vacía delante del resumen. Misma lógica de
+            siempre: elegible sólo en un documento nuevo (`_wsToolCcyEditable`), fija después. */''}
+      <div class="wsbud-controls">
+        ${_wsBudgetCcyCtlHtml()}
+        ${_wsBudgetPeriodHtml(inp)}
+      </div>
       ${/* §27 — LAS CUATRO MAGNITUDES SE DISTINGUEN SIN LEER. Ingresos, gastos y disponible
             llevan acento propio (entra, sale, queda) y no dependen sólo del rótulo: hasta ahora
             ingresos y gastos eran dos celdas idénticas y había que leerlas para saber cuál era
@@ -28978,7 +28998,6 @@ function _wsBudgetTopHtml(inp) {
               es peor que no ponerlo: un periodo ilegible no identifica nada. Aquí comparte fila
               con las cifras que CALIFICA, así que no cuesta un píxel de altura, se lee entero y la
               cabecera vuelve a ser la de v740. */''}
-        ${_wsBudgetPeriodHtml(inp)}
       </div>
       ${/* UNA SOLA LECTURA. Aquí se repetía el déficit que la lectura junto al gráfico ya dice
             con las mismas palabras; se queda allí, que es donde se entiende. */''}
@@ -29257,7 +29276,9 @@ function _renderBudgetTool() {
   return `
     <div class="aurix-wsh wsh-tool-view is-revealed" data-wsh-view="tool" data-wsbud-view>
       ${_wsSurfaceHeadHtml({ title: t('wstool_budget_n'), doc: _wsToolDocName(), help: [t('wstool_budget_d')] })}
-      ${_wsToolCcyRowHtml()}
+      ${/* La moneda va en la cabecera compacta del resumen; sólo un documento ANTIGUO sin moneda
+            conserva aquí su aviso completo, porque necesita explicación y confirmación. */''}
+      ${_wsDocCcy() ? '' : _wsToolCcyRowHtml()}
       <section class="wsh-card wsbud-top-card" data-wsbud-top>${_wsBudgetTopHtml(inp)}</section>
       ${/* ── PRIMERO ENTENDER, DESPUÉS EDITAR ──────────────────────────────────────────────
             El orden del DOM ES el de lectura: resumen → reparto → edición → ayuda. En móvil se
@@ -73702,7 +73723,7 @@ function buildBadgeHtml(asset, badgeText, cls = 'asset-badge') {
     const extra    = isCrypto ? ` data-key="${sym}" data-step="0"` : '';
     const onErr    = isCrypto
       ? `_logoFallback(this)`
-      : `this.parentElement.classList.remove('badge--has-logo')`;
+      : `this.style.display='none';this.parentElement.classList.remove('badge--has-logo')`;
     return `<div class="${cls} ${asset.type} badge--has-logo">` +
       `<img class="asset-badge-logo" src="${logoUrl}" alt="" loading="lazy" aria-hidden="true"` +
       `${extra} onerror="${onErr}">` +

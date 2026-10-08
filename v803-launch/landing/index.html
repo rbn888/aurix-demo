@@ -37,7 +37,7 @@
 
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="stylesheet" href="../vendor/inter.css">
-  <link rel="stylesheet" href="styles.css?v=spec2-01">
+  <link rel="stylesheet" href="styles.css?v=spec2-02">
 </head>
 <body>
 
@@ -86,104 +86,72 @@
       <div class="hero-bg" aria-hidden="true"></div>
       <div class="container hero-inner">
         <div class="hero-copy">
-          <span class="eyebrow reveal" data-i18n="hero.eyebrow">Personal wealth</span>
-          <h1 class="hero-title reveal"><span data-i18n="hero.h1a">All your wealth,</span><br><span data-i18n="hero.h1b">clear and in one place.</span></h1>
-          <p class="hero-sub reveal" data-i18n="hero.sub">For people who invest in stocks, funds, crypto, metals or real estate and keep it spread across several providers. Record your positions, understand how your wealth is distributed and plan with calculation tools.</p>
-          <!-- CTA principal visible en TODAS las anchuras (antes sólo en móvil): el registro, con el idioma activo. -->
+          <h1 class="hero-title reveal"><span data-i18n="hero.h1a">All your wealth.</span><br><span data-i18n="hero.h1b">A smarter view.</span></h1>
+          <p class="hero-sub reveal" data-i18n="hero.sub">Bring your investments together, understand what is changing and plan your next steps. Stocks, ETFs, funds, crypto and more, in one place.</p>
           <div class="hero-cta reveal">
             <a class="btn btn-primary btn-lg" href="../" data-app-link data-launch-cta data-i18n="cta.start">Create a free account</a>
-            <a class="btn btn-ghost btn-lg" href="#how" data-i18n="cta.see">See the product</a>
+            <a class="btn btn-ghost btn-lg" href="#how" data-i18n="cta.see">Explore Aurix</a>
           </div>
-          <p class="hero-cta-note reveal" data-i18n="hero.note">No card needed. Manual entry: Aurix does not connect to your bank.</p>
+          <p class="hero-cta-note reveal" data-i18n="hero.note">No card needed to start.</p>
           <span class="hero-cta-note launch-count" id="launchCountdown" hidden></span>
         </div>
 
-        <!-- PRODUCTO REAL con DATOS FICTICIOS (misma cuenta de demo en las tres capturas), etiquetado. -->
-        <figure class="hero-visual shot reveal">
-          <img src="assets/dashboard-en.jpg" data-i18n-src="dashboard" width="1920" height="1200" alt="Aurix Dashboard with fictitious data" data-i18n-alt="alt.dashboard" fetchpriority="high">
-          <figcaption class="shot-tag" data-i18n="shot.tag">Real product · fictitious data</figcaption>
+        <!-- PRODUCTO REAL con DATOS DE EJEMPLO (una sola cartera ficticia en las cuatro capturas). -->
+        <figure class="shot-fig hero-visual reveal">
+          <img src="assets/dashboard-en.jpg" data-i18n-src="dashboard" width="1600" height="1000" alt="Aurix Dashboard with sample data" data-i18n-alt="alt.dashboard" fetchpriority="high" decoding="async">
+          <figcaption class="shot-cap" data-i18n="shot.tag">Aurix view · sample data</figcaption>
         </figure>
       </div>
     </section>
 
-    <!-- ─────────────── PROBLEM ─────────────── -->
-    <section class="section section--problem" id="product">
+    <!-- ─────────────── TRANSICIÓN ─────────────── -->
+    <section class="section section--bridge">
       <div class="container">
-        <h2 class="section-title reveal" data-i18n="problem.title">Your wealth is fragmented.</h2>
-        <p class="section-lead reveal" data-i18n="problem.lead">Spread across banks, brokers and apps that never talk to each other.</p>
-        <div class="frag-grid">
-          <div class="frag-card reveal"><svg class="frag-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-5 9 5M5 9v9m4-9v9m6-9v9m4-9v9M3 19h18"/></svg><h3 data-i18n="frag.banks.t">Banks</h3></div>
-          <div class="frag-card reveal"><svg class="frag-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 8-8M21 8v5m0-5h-5"/></svg><h3 data-i18n="frag.brokers.t">Brokers</h3></div>
-          <div class="frag-card reveal"><svg class="frag-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 8v8m-4-6l8 4m0-4l-8 4"/></svg><h3 data-i18n="frag.crypto.t">Crypto</h3></div>
-          <div class="frag-card reveal"><svg class="frag-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg><h3 data-i18n="frag.realestate.t">Real Estate</h3></div>
-          <div class="frag-card reveal"><svg class="frag-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15h16l-2 5H6l-2-5zM7 15l1.5-5h7L17 15M9.5 10l1-4h3l1 4"/></svg><h3 data-i18n="frag.metals.t">Metals</h3></div>
-          <div class="frag-card reveal"><svg class="frag-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h20v12H2zM2 10h20M6 18v2m12-2v2"/></svg><h3 data-i18n="frag.cash.t">Cash</h3></div>
-        </div>
-        <!-- Consequences of fragmentation — one elegant conclusion line, not 3 cards. -->
-        <p class="pain-line reveal">
-          <span data-i18n="pain.1.t">No visibility</span>
-          <span data-i18n="pain.2.t">No clarity</span>
-          <span data-i18n="pain.3.t">No context</span>
-        </p>
+        <p class="bridge-line reveal" data-i18n="bridge">Your investments are spread out. Your view doesn’t have to be.</p>
       </div>
     </section>
 
-    <!-- ─────────────── CÓMO FUNCIONA: reunir · entender · planificar (producto real, datos ficticios) ─────────────── -->
+    <!-- ─────────────── CÓMO FUNCIONA: reúne · entiende · planifica ─────────────── -->
     <section class="section section--how" id="how">
       <div class="container">
         <span class="eyebrow reveal" data-i18n="how.eyebrow">How it works</span>
-        <h2 class="section-title reveal" data-i18n="how.title">Bring it together, understand it, plan it.</h2>
+        <p class="section-lead how-lead reveal" data-i18n="how.lead">You record your positions yourself: Aurix does not connect to your bank or ask for your banking credentials.</p>
         <div class="how-row reveal">
           <div class="how-copy">
-            <span class="how-step">1</span>
             <h3 data-i18n="how.1.t">Bring all your wealth together</h3>
-            <p data-i18n="how.1.d">Record stocks, ETFs, funds, crypto, metals, real estate and cash, each in its own currency. See your total, how it splits across categories and how it evolves.</p>
-            <ul class="how-list">
-              <li data-i18n="how.1.b1">Market prices updated for listed assets</li>
-              <li data-i18n="how.1.b2">Several currencies, with the exchange rate source and date in view</li>
-            </ul>
+            <p data-i18n="how.1.d">See how much you have, how it is distributed and how it evolves. Organise stocks, ETFs, funds, crypto, metals, real estate and cash in a single view.</p>
+            <p class="how-note" data-i18n="how.1.note">Add your positions manually and keep your information up to date.</p>
           </div>
-          <figure class="shot"><img src="assets/dashboard-en.jpg" data-i18n-src="dashboard" width="1920" height="1200" loading="lazy" alt="Aurix Dashboard with fictitious data" data-i18n-alt="alt.dashboard"><figcaption class="shot-tag" data-i18n="shot.tag">Real product · fictitious data</figcaption></figure>
+          <figure class="shot-fig"><img src="assets/positions-en.jpg" data-i18n-src="positions" width="1560" height="900" loading="lazy" decoding="async" alt="Positions in a category in Aurix, with sample data" data-i18n-alt="alt.positions"><figcaption class="shot-cap" data-i18n="shot.tag">Aurix view · sample data</figcaption></figure>
         </div>
         <div class="how-row how-row--rev reveal">
           <div class="how-copy">
-            <span class="how-step">2</span>
-            <h3 data-i18n="how.2.t">Understand what moves it</h3>
-            <p data-i18n="how.2.d">Intelligence reads your portfolio: where it is concentrated, how much cash weighs and what changed since your last visit. It only states what your data can measure.</p>
+            <h3 data-i18n="how.2.t">Find out what deserves your attention</h3>
+            <p data-i18n="how.2.d">Intelligence puts your wealth in context: where it is concentrated, what has changed and how its structure evolves. A reading of your data to better understand your portfolio.</p>
           </div>
-          <figure class="shot"><img src="assets/intelligence-en.jpg" data-i18n-src="intelligence" width="1920" height="1200" loading="lazy" alt="Aurix Intelligence with fictitious data" data-i18n-alt="alt.intelligence"><figcaption class="shot-tag" data-i18n="shot.tag">Real product · fictitious data</figcaption></figure>
+          <figure class="shot-fig"><img src="assets/intelligence-en.jpg" data-i18n-src="intelligence" width="1600" height="1012" loading="lazy" decoding="async" alt="Aurix Intelligence with sample data" data-i18n-alt="alt.intelligence"><figcaption class="shot-cap" data-i18n="shot.tag">Aurix view · sample data</figcaption></figure>
         </div>
         <div class="how-row reveal">
           <div class="how-copy">
-            <span class="how-step">3</span>
-            <h3 data-i18n="how.3.t">Plan with numbers</h3>
-            <p data-i18n="how.3.d">Workspace brings 9 tools together — budget, loans, goals, compound interest, real estate, receivables and more — to calculate scenarios and keep your plans.</p>
+            <h3 data-i18n="how.3.t">Turn your numbers into plans</h3>
+            <p data-i18n="how.3.d">Organise your budget, keep track of pending collections and payments, explore loans and project your goals and compound interest. Tools and templates to plan with your own numbers.</p>
+            <p class="how-note" data-i18n="how.3.ex">Templates such as Monthly budget, Payment control, Financial goals or Real estate portfolio; tools such as Compound interest, Loan simulator or Scenario builder.</p>
           </div>
-          <figure class="shot"><img src="assets/workspace-en.jpg" data-i18n-src="workspace" width="1920" height="1200" loading="lazy" alt="Aurix Workspace with fictitious data" data-i18n-alt="alt.workspace"><figcaption class="shot-tag" data-i18n="shot.tag">Real product · fictitious data</figcaption></figure>
+          <figure class="shot-fig"><img src="assets/workspace-en.jpg" data-i18n-src="workspace" width="1600" height="1000" loading="lazy" decoding="async" alt="Aurix monthly budget with sample data" data-i18n-alt="alt.workspace"><figcaption class="shot-cap" data-i18n="shot.tag">Aurix view · sample data</figcaption></figure>
         </div>
       </div>
     </section>
 
-    <!-- ─────────────── TRES BENEFICIOS ─────────────── -->
-    <section class="section section--benefits" id="benefits">
-      <div class="container">
-        <div class="benefit-grid">
-          <article class="benefit reveal"><h3 data-i18n="ben.1.t">One figure you can trust</h3><p data-i18n="ben.1.d">Your investable wealth in one currency, each position valued in its own and every conversion with a source and a date.</p></article>
-          <article class="benefit reveal"><h3 data-i18n="ben.2.t">Know where your exposure is</h3><p data-i18n="ben.2.d">See which positions and categories concentrate your wealth before a surprise shows you.</p></article>
-          <article class="benefit reveal"><h3 data-i18n="ben.3.t">Decide with your own numbers</h3><p data-i18n="ben.3.d">Work out a mortgage payment, the savings for a goal or this month’s budget, and come back when something changes.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────── FREE / PREMIUM Y PRECIOS (catálogo vigente: 7,99 €/mes · 69,99 €/año, sin prueba) ─────────────── -->
+    <!-- ─────────────── FREE / PREMIUM (catálogo vigente: 7,99 €/mes · 69,99 €/año, sin prueba) ─────────────── -->
     <section class="section section--plans" id="plans">
       <div class="container">
-        <span class="eyebrow reveal" data-i18n="plans.eyebrow">Plans</span>
         <h2 class="section-title reveal" data-i18n="plans.title">Start free. Go Premium when you want more.</h2>
         <div class="plan-grid">
           <article class="plan reveal">
             <h3 class="plan-name">Free</h3>
             <p class="plan-price"><b data-i18n="free.price">€0</b> <span data-i18n="free.per">no cost</span></p>
+            <p class="plan-sub" data-i18n="free.sub">No card needed to start.</p>
+            <p class="plan-intro" data-i18n="free.intro">Includes:</p>
             <ul class="plan-list">
               <li data-i18n="free.1">All your positions, with no asset limit</li>
               <li data-i18n="free.2">Dashboard with total, split and evolution</li>
@@ -191,55 +159,21 @@
               <li data-i18n="free.4">A first Intelligence reading of your portfolio</li>
             </ul>
             <a class="btn btn-ghost btn-block" href="../" data-app-link data-launch-cta data-i18n="cta.start">Create a free account</a>
+            <p class="plan-terms" aria-hidden="true"></p>
           </article>
           <article class="plan plan--premium reveal">
             <h3 class="plan-name">Premium</h3>
-            <div class="plan-prices">
-              <p class="plan-price"><b data-i18n="price.month">€7.99</b> <span data-i18n="price.month.per">per month</span></p>
-              <p class="plan-price"><b data-i18n="price.year">€69.99</b> <span data-i18n="price.year.per">per year</span></p>
-            </div>
-            <p class="plan-note" data-i18n="price.year.note">The annual plan is charged once a year. That is €5.83 a month: you save 27% compared with paying monthly.</p>
+            <p class="plan-price"><b data-i18n="price.month">€7.99</b> <span data-i18n="price.month.per">per month</span></p>
+            <p class="plan-sub" data-i18n="price.year.note">Or €69.99 a year, billed annually: €5.83 a month, you save 27%.</p>
+            <p class="plan-intro" data-i18n="prem.intro">Everything in Free, plus:</p>
             <ul class="plan-list">
-              <li data-i18n="prem.1">Full Intelligence: structure, concentration and changes</li>
-              <li data-i18n="prem.2">Full Workspace: the 9 calculation and planning tools</li>
+              <li data-i18n="prem.1">Full Intelligence: concentration, structure and changes in your wealth</li>
+              <li data-i18n="prem.2">All Workspace tools and templates</li>
               <li data-i18n="prem.3">Save your plans and pick them up on another device</li>
-              <li data-i18n="prem.4">Everything in Free</li>
             </ul>
-            <a class="btn btn-primary btn-block" href="../" data-app-link data-launch-cta data-i18n="cta.premium">Start free and upgrade in the app</a>
-            <p class="plan-terms" data-i18n="price.terms">Renews automatically. Cancel whenever you want from “Manage my plan”. Payments are handled by Stripe; Aurix does not store your card.</p>
+            <a class="btn btn-primary btn-block" href="../" data-app-link data-launch-cta data-i18n="cta.premium">Start and discover Premium</a>
+            <p class="plan-terms" data-i18n="price.terms">Renewing subscription. Cancel from Manage my plan.</p>
           </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─────────────── COMMUNITY (AURIX-WEBSITE-MESSAGING-1) ─────────────── -->
-    <!-- Trust signal, not a primary CTA. Lives at the bottom of the landing,
-         below the access CTA and above the footer. Quiet, integrated cards. -->
-    <section class="section section--community" id="community">
-      <div class="container community-inner">
-        <h2 class="section-title reveal" data-i18n="community.title">Join the Aurix Community</h2>
-        <p class="section-lead reveal" data-i18n="community.text">Follow product development, receive updates and connect with early users building the future of wealth intelligence.</p>
-        <div class="community-grid reveal">
-          <a class="community-card" href="https://x.com/AurixSystem" target="_blank" rel="noopener noreferrer" aria-label="Aurix on X (@AurixSystem)">
-            <svg class="community-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>
-            <span class="community-name">X</span>
-            <span class="community-handle">@AurixSystem</span>
-          </a>
-          <a class="community-card" href="https://instagram.com/aurixapp" target="_blank" rel="noopener noreferrer" aria-label="Aurix on Instagram (@AurixApp)">
-            <svg class="community-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.2" cy="6.8" r="1.1"/></svg>
-            <span class="community-name">Instagram</span>
-            <span class="community-handle">@AurixApp</span>
-          </a>
-          <a class="community-card" href="https://tiktok.com/@aurixsystem" target="_blank" rel="noopener noreferrer" aria-label="Aurix on TikTok (@AurixSystem)">
-            <svg class="community-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20a3.2 3.2 0 103.2-3.2V4c1 2.4 2.8 3.6 5 3.6"/></svg>
-            <span class="community-name">TikTok</span>
-            <span class="community-handle">@AurixSystem</span>
-          </a>
-          <a class="community-card community-card--secondary" href="https://t.me/aurix_system" target="_blank" rel="noopener noreferrer" aria-label="Aurix community on Telegram">
-            <svg class="community-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4L3 11.2l6 2.2L11 20l3.2-3.8L19 19z"/><path d="M9 13.4L17 7"/></svg>
-            <span class="community-name">Telegram</span>
-            <span class="community-handle" data-i18n="community.tg.sub">Official Community</span>
-          </a>
         </div>
       </div>
     </section>
@@ -248,9 +182,9 @@
     <section class="section section--faq" id="faq">
       <div class="container faq-inner">
         <h2 class="section-title reveal" data-i18n="faq.title">Frequently asked questions</h2>
-        <details class="faq reveal"><summary data-i18n="faq.1.q">What can I do for free?</summary><p data-i18n="faq.1.a">Record all your positions, see your wealth, its split and evolution, follow the market and get a first Intelligence reading. Premium adds the full reading, Workspace and saving your plans.</p></details>
+        <details class="faq reveal"><summary data-i18n="faq.1.q">What can I do for free?</summary><p data-i18n="faq.1.a">Record all your positions, see your wealth, its split and evolution, follow the market and get a first Intelligence reading. Premium adds full Intelligence, all Workspace tools and templates, and saving your plans.</p></details>
         <details class="faq reveal"><summary data-i18n="faq.2.q">Does Aurix connect to my bank or broker?</summary><p data-i18n="faq.2.a">No. You record your positions by hand and Aurix updates the prices of listed assets. It does not need your banking credentials and cannot move your money.</p></details>
-        <details class="faq reveal"><summary data-i18n="faq.3.q">How is Premium charged and how do I cancel?</summary><p data-i18n="faq.3.a">Monthly (€7.99) or annual (€69.99 in a single yearly charge). Payments are processed by Stripe. Cancel whenever you want from “Manage my plan” in the app.</p></details>
+        <details class="faq reveal"><summary data-i18n="faq.3.q">How is Premium charged and how do I cancel?</summary><p data-i18n="faq.3.a">Monthly (€7.99 a month) or annual (€69.99, in a single yearly charge). The subscription renews automatically at the end of each period until you cancel it from “Manage my plan” in the app. Payments are processed by Stripe; Aurix does not store your card.</p></details>
         <details class="faq reveal"><summary data-i18n="faq.4.q">Does Aurix tell me what to buy or sell?</summary><p data-i18n="faq.4.a">No. Aurix organises and explains your wealth; it does not give financial advice or investment recommendations.</p></details>
         <details class="faq reveal"><summary data-i18n="faq.5.q">Where can I use it?</summary><p data-i18n="faq.5.a">In the browser on your computer or phone, and you can add it to your home screen. Your data is kept in your account.</p></details>
       </div>
@@ -259,9 +193,9 @@
     <!-- ─────────────── CTA FINAL ─────────────── -->
     <section class="section section--final" id="start">
       <div class="container final-inner reveal">
-        <h2 class="section-title" data-i18n="final.title">See all your wealth in one place.</h2>
+        <h2 class="section-title" data-i18n="final.title">Your wealth, with more clarity.</h2>
         <a class="btn btn-primary btn-lg" href="../" data-app-link data-launch-cta data-i18n="cta.start">Create a free account</a>
-        <p class="hero-cta-note" data-i18n="final.note">No card needed. You can upgrade to Premium later from the app.</p>
+        <p class="hero-cta-note" data-i18n="final.note">Start with Free. Discover Premium from the app.</p>
       </div>
     </section>
 

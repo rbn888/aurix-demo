@@ -30494,3 +30494,22 @@ body.onb-addflow #liquidityOverlay .btn-submit { background: linear-gradient(180
    pantallas bajas se omite; el paywall al que lleva el CTA ya da ejemplos por capacidad. */
 .wsfc-sub + .wsfc-eg { margin-top: 4px; }
 @media (max-height: 760px) { .wsfc-eg { display: none; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPEC 2 · PRESUPUESTO — CABECERA COMPACTA (moneda + periodo) y TRES cifras debajo.
+   La moneda ocupaba una fila casi vacía antes del resumen; el periodo era la cuarta celda.
+   ══════════════════════════════════════════════════════════════════════════ */
+.wsbud-top-card .wsbud-top { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.wsbud-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; }
+.wsbud-controls .wsbud-perchip { flex-direction: column; align-items: flex-start; gap: 3px; }
+.wsbud-controls .wsbud-perchip-lbl { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #b9c6de; }
+.wsbud-ccy-fixed { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 10px;
+  font-weight: 700; color: var(--text-bright, #f4f7fc); background: var(--elev-0, #0b1120); border: 1px solid rgba(92,150,255,0.22); }
+.wsbud-controls .wsbud-perchip-sel { min-height: 36px; }
+/* Tres cifras: en móvil ingresos | gastos y el disponible a lo ancho; desde 900 px, en fila. */
+.wsbud-top-card .wsbud-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.wsbud-top-card .wsbud-kpi.is-main { grid-column: 1 / -1; }
+@media (min-width: 900px) {
+  .wsbud-top-card .wsbud-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wsbud-top-card .wsbud-kpi.is-main { grid-column: auto; }
+}
