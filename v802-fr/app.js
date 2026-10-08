@@ -4342,6 +4342,8 @@ const USER_SCOPED_WORK_KEYS = [
   // Los parámetros de Escenarios guardan el patrimonio DECLARADO como base: tras cambiar de
   // cuenta, el siguiente usuario los leía (reproducido en la demo con dos cuentas sintéticas).
   'aurix_ws_scn_params_v1',
+  // Documentos remotos AMBIGUOS apartados para recuperación explícita: son de la cuenta.
+  'aurix_ws_recoverable_v1',
 ];
 // `aurix_ws_prefrev_` — la revisión aplicada de cada preferencia sincronizada; heredarla hacía
 // que la cuenta siguiente descartara sus propias preferencias remotas por «más antiguas».
@@ -4850,6 +4852,9 @@ const T = {
     fxRateStale:     (r, d) => `Cambio EUR/USD no actual: último conocido 1 € = ${r} $ (${d}). Los totales convertidos son aproximados.`,
     fxRateNone:      'Sin tipo de cambio EUR/USD disponible: los totales convertidos son aproximados.',
     fxHeroApprox:    ' · cambio no actual',   // corto: el «≈» marca el total; el detalle está en Ajustes
+    fxBadgeApprox:   'Variación aproximada: el cambio EUR/USD no es actual, así que la valoración de hoy no es comparable con certeza.',
+    fxBadgeBasis:    d => `Sin variación comparable: hasta el ${d} Aurix valoraba los euros con un cambio fijo (0,92) y desde entonces con el tipo fechado. Comparar ambos puntos daría una rentabilidad que no existe.`,
+    fxApproxShort:   'aproximado: cambio EUR/USD no actual',
     fxHeroApproxLong: 'Total aproximado: el cambio EUR/USD no es actual (detalle en Ajustes).',
     rateLimit:       'Límite de API — reintentando pronto',
     // Autosave status
@@ -6589,6 +6594,12 @@ const T = {
     wspl_empty_cta:       'Ver plantillas',
     wspl_loading:         'Comprobando tus planes guardados…',
     wspl_remote_only:     'Tu cuenta tiene documentos guardados que este dispositivo todavía no puede recuperar. Siguen intactos en tu cuenta.',
+    wspl_recover_note:    n => `${n === 1 ? 'Hay 1 documento antiguo' : 'Hay ' + n + ' documentos antiguos'} de tu cuenta cuya vigencia no se puede confirmar (pudo borrarse). No se restaura${n === 1 ? '' : 'n'} solo${n === 1 ? '' : 's'}.`,
+    wspl_recover_btn:     'Revisar',
+    wsrec_title:          'Documentos antiguos sin confirmar',
+    wsrec_text:           'Se guardaron antes de que Aurix registrara los borrados, así que no se sabe si los eliminaste. Recupera sólo el que quieras conservar.',
+    wsrec_ok:             'Recuperar',
+    wsrec_untitled:       'Documento sin nombre',
     wspl_error:           'No se han podido cargar tus planes guardados.',
     wspl_m_income:        'Ingresos',
     wspl_m_avail:         'Disponible',
@@ -8216,6 +8227,9 @@ const T = {
     fxRateStale:     (r, d) => `EUR/USD rate not current: last known €1 = $${r} (${d}). Converted totals are approximate.`,
     fxRateNone:      'No EUR/USD exchange rate available: converted totals are approximate.',
     fxHeroApprox:    ' · FX not current',
+    fxBadgeApprox:   'Approximate change: the EUR/USD rate is not current, so today\'s valuation cannot be compared with certainty.',
+    fxBadgeBasis:    d => `No comparable change: until ${d} Aurix valued euros at a fixed rate (0.92) and since then at the dated rate. Comparing both points would show a return that does not exist.`,
+    fxApproxShort:   'approximate: EUR/USD rate not current',
     fxHeroApproxLong: 'Approximate total: the EUR/USD rate is not current (details in Settings).',
     rateLimit:       'API limit — retrying soon',
     // Autosave status
@@ -9581,6 +9595,12 @@ const T = {
     wspl_empty_cta:       'See templates',
     wspl_loading:         'Checking your saved plans…',
     wspl_remote_only:     'Your account has saved documents that this device cannot recover yet. They remain intact in your account.',
+    wspl_recover_note:    n => `${n === 1 ? 'There is 1 old document' : 'There are ' + n + ' old documents'} in your account whose status cannot be confirmed (it may have been deleted). ${n === 1 ? 'It is' : 'They are'} not restored automatically.`,
+    wspl_recover_btn:     'Review',
+    wsrec_title:          'Old unconfirmed documents',
+    wsrec_text:           'They were saved before Aurix recorded deletions, so it is unknown whether you deleted them. Recover only the one you want to keep.',
+    wsrec_ok:             'Recover',
+    wsrec_untitled:       'Untitled document',
     wspl_error:           'Your saved plans could not be loaded.',
     wspl_m_income:        'Income',
     wspl_m_avail:         'Available',
@@ -12783,6 +12803,9 @@ function _aurixCaptureFlow(kind, amountUSD, ts, assetId, note, source, extra) {
     if (extra && extra.intent && _AURIX_FLOW_INTENT[extra.intent]) flow.intent = String(extra.intent);
     if (assetId) flow.assetId = assetId;
     if (note)    flow.note = note;
+    // Procedencia del tipo: 'anchor_reconstructed' = importe EUR reconstruido con el ancla 0,92
+    // (aproximado, NO evidencia histórica certificada).
+    if (extra && extra.fxBasis) flow.fxBasis = String(extra.fxBasis);
     // SPEC DSH.CHART.RETURNS.RETIMING.01 — optional re-time audit trail (originalTs/matchedStepTs/etc);
     // never affects the id or the amount, so idempotency and neutralisation are unchanged.
     // `intent` se excluye de la copia genérica: ya se validó arriba contra el
@@ -13650,7 +13673,7 @@ function _aurixBackfillFlowsFromTransactions() {
         const signed = isSell ? -usd : usd;
         // Clave estable e independiente del orden de recorrido (activo + tx + importe).
         candidates.push({ key: (a.id || 'cash') + '|' + tx.ts + '|' + Math.round(Math.abs(signed) * 100) + '|' + (isSell ? 's' : 'b'),
-                          amountUSD: signed, originalTs: tx.ts, assetId: a.id, isSell: isSell });
+                          amountUSD: signed, originalTs: tx.ts, assetId: a.id, isSell: isSell, fxBasis: _cur === 'EUR' ? 'anchor_reconstructed' : null });
       }
     }
     // UN solo plan global para todos los candidatos: identidad de serie → tandas → exclusividad
@@ -13662,7 +13685,7 @@ function _aurixBackfillFlowsFromTransactions() {
       if (effTs !== c.originalTs) reAnchored++;
       // SAME (kind, assetId, ts, amount) as _ledgerTrade → idempotent with live flows.
       _aurixCaptureFlow(c.isSell ? 'asset_remove' : 'asset_add', c.amountUSD, effTs, c.assetId, 'tx-backfill', 'tx-backfill',
-        { originalTs: c.originalTs, retimeReason: dec.reason, retimeConfidence: dec.confidence, matchedStepTs: dec.matchedStepTs });
+        { originalTs: c.originalTs, retimeReason: dec.reason, retimeConfidence: dec.confidence, matchedStepTs: dec.matchedStepTs, fxBasis: c.fxBasis });
       c.__effTs = effTs; c.__reason = dec.reason;
     }
     added = _aurixLoadCapitalFlows().length - before;
@@ -14573,7 +14596,13 @@ function _aurixFxRate(ccy)   { return _aurixFxLookup(ccy).rate; }     // number 
 function _aurixFxEurInvolved() {
   const base = String(typeof baseCurrency !== 'undefined' ? baseCurrency : 'USD').toUpperCase();
   const list = (typeof activeAssets === 'function') ? activeAssets() : [];
-  return list.some(a => { const c = String((a && a.assetCurrency) || 'USD').toUpperCase(); return c !== base && (c === 'EUR' || base === 'EUR'); });
+  return list.some(a => { if (!a || a.type === 'real_estate') return false; const c = String(a.assetCurrency || 'USD').toUpperCase(); return c !== base && (c === 'EUR' || base === 'EUR'); });
+}
+function _aurixFxNoteText(st) {
+  const loc = (typeof lang !== 'undefined' && lang === 'en') ? 'en-GB' : 'es-ES';
+  const r = st.rate ? st.rate.toLocaleString(loc, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : '';
+  const d = st.at ? new Date(st.at).toLocaleString(loc, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  return st.status === 'live' ? t('fxRateLine')(r, st.source, d) : st.status === 'stale' ? t('fxRateStale')(r, d) : t('fxRateNone');
 }
 // Procedencia verificable del tipo (valor, fuente, fecha) en Ajustes; devuelve el estado.
 function _aurixFxNoteRender() {
@@ -14590,6 +14619,137 @@ function _aurixFxNoteRender() {
     }
   } catch (_) {}
   return st;
+}
+// ── CAMBIO DE BASE DEL TIPO (SPEC 1): LIMITAR, NO CORREGIR ──────────────────────────────────
+// Los puntos del CLIENTE anteriores valoraban EUR con el ancla 0,92; los del SERVIDOR ya usaban el
+// tipo real; los nuevos del cliente, el tipo fechado. El salto depende de QUÉ punto inicia cada
+// ventana, así que ningún apunte único en el ledger lo corrige bien (revisión financiera: podía
+// fabricar ±1,57 %). Lo honesto: cada punto NUEVO declara su base (`fxBasis`) y, con exposición EUR,
+// una rentabilidad cuya ventana EMPIEZA antes del último punto de cliente sin base declarada se
+// LIMITA con explicación. No se reescribe el histórico ni se inventa ningún tipo.
+function _aurixFxEurExposureNative() {
+  let eur = 0;
+  try { (activeAssets() || []).forEach(a => {
+    if (!a || String(a.assetCurrency || 'USD').toUpperCase() !== 'EUR' || a.type === 'real_estate') return;
+    const n = Number(assetNativeValue(a)); if (Number.isFinite(n) && n > 0) eur += n; }); } catch (_) {}
+  return eur;
+}
+// Último punto de CLIENTE valorado sin base declarada (anterior a este cambio), o null. Lee la serie
+// BASE (canónica o local, sin el merge con backend, que sólo añade puntos de servidor) y se cachea
+// por longitud y último ts: se consulta en cada pintado de variación.
+let _aurixFxBoundaryCache = { key: null, val: null };
+function _aurixFxBasisBoundary() {
+  try {
+    const authed = (typeof currentUser !== 'undefined' && currentUser && currentUser.id);
+    const src = (authed && typeof _aurixCanonicalCatHistory !== 'undefined' && Array.isArray(_aurixCanonicalCatHistory)) ? _aurixCanonicalCatHistory
+      : ((typeof categoryHistory !== 'undefined' && Array.isArray(categoryHistory)) ? categoryHistory : []);
+    const last = src[src.length - 1];
+    const key = src.length + ':' + (last ? last.ts : 0) + ':' + (last && last.fxBasis ? 1 : 0);
+    if (_aurixFxBoundaryCache.key === key) return _aurixFxBoundaryCache.val;
+    let val = null;
+    for (let i = src.length - 1; i >= 0; i--) {
+      const q = src[i]; if (!q || q.source === 'backend_snapshot') continue;
+      if (!q.fxBasis) { val = Number(q.ts) || null; break; }
+    }
+    _aurixFxBoundaryCache = { key: key, val: val };
+    return val;
+  } catch (_) { return null; }
+}
+// ¿Hubo EUR invertible ANTES del cambio? Evidencia: posiciones EUR (activas O CERRADAS: una venta
+// total no borra la fila) cuya primera operación —o alta— es anterior al límite. Sin fechas, se
+// asume que sí (prudente). La exposición ACTUAL no sirve: vender el EUR levantaría el límite.
+function _aurixFxEurHeldBefore(ts) {
+  try {
+    return (Array.isArray(assets) ? assets : []).some(a => {
+      if (!a || a.type === 'real_estate' || String(a.assetCurrency || 'USD').toUpperCase() !== 'EUR') return false;
+      // El asiento de APERTURA (`opening`) lleva la fecha de la migración, no la de adquisición: no cuenta.
+      const tx = Array.isArray(a.transactions) ? a.transactions.filter(x => x && x.opening !== true).map(x => Number(x.ts)).filter(Number.isFinite) : [];
+      const born = tx.length ? Math.min.apply(null, tx) : (Number(a.createdAt) || Number(a.addedAt) || null);
+      return born == null || born <= ts;
+    });
+  } catch (_) { return true; }
+}
+// ¿Una ventana que empieza en `startTs` compara puntos de base de tipo distinta con EUR de por medio?
+function _aurixFxBasisLimited(startTs) {
+  try {
+    const b = _aurixFxBasisBoundary(); if (b == null) return false;
+    if (Number(startTs) > b) return false;
+    return _aurixFxEurHeldBefore(b);
+  } catch (_) { return false; }
+}
+// ── UNA EXPLICACIÓN ACCESIBLE, NO UN TOOLTIP DE HOVER ──────────────────────────────────────────
+// La cifra afectada se vuelve enfocable (toque, clic, Enter/Espacio) y abre UNA burbuja flotante
+// (sin mover el diseño). Escape o tocar fuera la cierra.
+function _aurixFxExplainBind(el, text) {
+  if (!el) return;
+  if (!text) { if (el.hasAttribute('data-fx-explain')) { el.removeAttribute('data-fx-explain'); el.removeAttribute('tabindex'); el.removeAttribute('role'); el.removeAttribute('aria-description'); } return; }
+  el.setAttribute('data-fx-explain', text); el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button');
+  el.setAttribute('aria-description', text);
+}
+let _aurixFxBubbleWired = false;
+function _aurixFxBubbleWire() {
+  if (_aurixFxBubbleWired || typeof document === 'undefined') return; _aurixFxBubbleWired = true;
+  const close = () => { const b = document.getElementById('aurixFxBubble'); if (b) b.remove(); };
+  const open = el => {
+    close();
+    const b = document.createElement('div'); b.id = 'aurixFxBubble'; b.className = 'aurix-fx-bubble'; b.setAttribute('role', 'status');
+    b.textContent = el.getAttribute('data-fx-explain'); document.body.appendChild(b);
+    const r = el.getBoundingClientRect(), w = Math.min(300, window.innerWidth - 24);
+    b.style.width = w + 'px';
+    b.style.left = Math.max(12, Math.min(window.innerWidth - w - 12, r.left)) + 'px';
+    b.style.top = (r.bottom + 8) + 'px';
+  };
+  document.addEventListener('click', e => {
+    const el = e.target && e.target.closest ? e.target.closest('[data-fx-explain]') : null;
+    if (el) { open(el); return; }
+    if (!(e.target && e.target.closest && e.target.closest('#aurixFxBubble'))) close();
+  }, true);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { close(); return; }
+    const el = e.target && e.target.hasAttribute && e.target.hasAttribute('data-fx-explain') ? e.target : null;
+    if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(el); }
+  });
+  window.addEventListener('scroll', close, { passive: true });
+}
+// Badge del gráfico/24H: marcado SÓLO si su ventana contiene la corrección técnica o si el tipo no
+// es actual y la cartera lo necesita. Una cartera sin conversión EUR no recibe nada.
+const _AURIX_RANGE_MS = { '24h': 864e5, '7d': 7 * 864e5, '30d': 30 * 864e5, '1y': 365 * 864e5, '1a': 365 * 864e5 };
+function _aurixFxBadgeNote(range, published) {
+  try {
+    const st = _aurixFxEurState();
+    if (st.status !== 'live' && _aurixFxEurExposureNative() > 0) return t('fxBadgeApprox');
+    // La nota dice lo que el cálculo HIZO: con el gráfico publicado, su motivo; sin él, el rango.
+    let limited;
+    if (published && typeof published === 'object') limited = published.returnSuppressedReason === 'fx_basis_change' || published.fxBasisLimited === true;
+    else { const span = _AURIX_RANGE_MS[String(range || '').toLowerCase()]; limited = _aurixFxBasisLimited(span ? Date.now() - span : -Infinity); }
+    if (!limited) return '';
+    const b = _aurixFxBasisBoundary();
+    const loc = (typeof lang !== 'undefined' && lang === 'en') ? 'en-GB' : 'es-ES';
+    return t('fxBadgeBasis')(new Date(b).toLocaleDateString(loc, { day: '2-digit', month: '2-digit', year: 'numeric' }));
+  } catch (_) { return ''; }
+}
+function _aurixFxMarkBadge(el, published) {
+  try {
+    _aurixFxBubbleWire();
+    const note = _aurixFxBadgeNote(typeof activeRange !== 'undefined' ? activeRange : '24h', published);
+    _aurixFxExplainBind(el, note);
+    if (note) el.setAttribute('data-fx-mark', '1'); else el.removeAttribute('data-fx-mark');
+  } catch (_) {}
+}
+// Categorías: «≈» sólo en las que contienen una conversión EUR con tipo no actual.
+function _aurixFxMarkCategories() {
+  try {
+    if (typeof document === 'undefined') return;
+    const st = _aurixFxEurState();
+    const base = String(typeof baseCurrency !== 'undefined' ? baseCurrency : 'USD').toUpperCase();
+    const hit = new Set();
+    if (st.status !== 'live') (activeAssets() || []).forEach(a => { const c = String((a && a.assetCurrency) || 'USD').toUpperCase(); if (c !== base && (c === 'EUR' || base === 'EUR')) hit.add(a.type); });
+    document.querySelectorAll('.cat-card[data-type]').forEach(card => {
+      const v = card.querySelector('.cat-card-value'); if (!v) return;
+      if (hit.has(card.getAttribute('data-type'))) { v.setAttribute('data-fx-approx', st.status); v.setAttribute('aria-description', t('fxApproxShort')); }
+      else { v.removeAttribute('data-fx-approx'); v.removeAttribute('aria-description'); }
+    });
+  } catch (_) {}
 }
 function _aurixFxStatus(ccy) { return _aurixFxLookup(ccy).status; }   // 'live'|'approx'|'unknown'
 
@@ -16101,6 +16261,15 @@ function _aurixStampPointQuality(point, q) {
     if (q.fxApprox  === true) point.fxApprox  = true;
     if (q.valuationComplete === false) point.valuationComplete = false;
     if (q.suspect === true) point.suspect = true;   // audit/telemetry only — never a series filter
+    // Base del tipo con la que se valoró la parte EUR (USD por EUR, fechado). Ausente en puntos
+    // anteriores al SPEC 1 (ancla 0,92) y en carteras sin EUR. Aditivo: ningún consumidor lo exige.
+    if (typeof _aurixFxEurState === 'function') {
+      const st = _aurixFxEurState();
+      const exp = _aurixFxEurExposureNative() > 0;
+      if (st.rate && st.status === 'live' && exp) point.fxEurUsd = +st.rate.toFixed(6);
+      // Todo punto nuevo declara su base: 'dated' (EUR al tipo fechado) o 'na' (sin parte EUR).
+      point.fxBasis = exp ? (st.status === 'live' ? 'dated' : 'approx') : 'na';
+    }
   } catch (_) {}
   return point;
 }
@@ -21410,12 +21579,84 @@ async function _wsDocsPush(key) {
 let _wsDocsPullInFlight = false;
 let _wsDocsPullFailed = false;
 let _wsDocsPulledFor = null;
-let _wsDocsPullSkippedAbsent = 0;   // filas remotas sin copia local: NO se añaden (ver _wsDocsPull)
+let _wsDocsPullSkippedAbsent = 0;   // nº de documentos remotos AMBIGUOS apartados (= _wsRecoverable().length)
+// ── VIGENCIA ACREDITADA DE UN DOCUMENTO REMOTO AUSENTE EN LOCAL (SPEC 1) ─────────────────────
+// Entre 225442d (09-15, subida) y 52ccd7a (09-17) borrar FILTRABA el array sin dejar `deleted_at`:
+// esas filas siguen vivas en remoto y su existencia NO prueba vigencia. La prueba está en los
+// propios datos, sin relojes: `_wsDocStamp` (que escribe `revision` en el CUERPO) y los tombstones
+// llegaron en el MISMO commit 52ccd7a, y antes nadie escribía `revision` en el cuerpo. Un cuerpo
+// con `revision` numérica lo escribió un cliente que, al borrar, deja tombstone ⇒ vigente si la
+// fila no lo tiene. Un cuerpo sin ella es AMBIGUO: se aparta para que el usuario decida.
+// Fondos asignados: no tienen borrado (libro de movimientos); valen si su objetivo está vivo.
+const _WS4_INTERNAL_TYPES = Object.freeze(['investment', 'budget', 'property', 'business', 'networth', 'fire']);
+function _wsDocVigenciaAcreditada(kind, body) {
+  if (!body || typeof body !== 'object') return false;
+  if (kind === 'ws_funding') { try { return !!body.goalId && _wsgGoals().some(g => g && g.id === body.goalId); } catch (_) { return false; } }
+  // Excepción (revisión financiera): las plantillas INTERNAS de la hoja ws4 se borraban en producción
+  // con `_ws4Delete`, que FILTRABA sin tombstone aunque su cuerpo llevara `revision`. Su evidencia no
+  // vale: quedan ambiguas. Herramientas, objetivos y escenarios siempre borraron con tombstone.
+  if (kind === 'ws_project' && _WS4_INTERNAL_TYPES.indexOf(String(body.type)) >= 0) return false;
+  return typeof body.revision === 'number' && Number.isFinite(body.revision) && body.revision >= 1;
+}
+const _WS_RECOVERABLE_KEY = 'aurix_ws_recoverable_v1';
+function _wsRecoverable() { try { const v = JSON.parse(localStorage.getItem(_WS_RECOVERABLE_KEY) || '[]'); return Array.isArray(v) ? v.filter(x => x && x.key && x.docId) : []; } catch (_) { return []; } }
+try { _wsDocsPullSkippedAbsent = (function () { try { const v = JSON.parse(localStorage.getItem('aurix_ws_recoverable_v1') || '[]'); return Array.isArray(v) ? v.length : 0; } catch (_) { return 0; } })(); } catch (_) {}
+function _wsRecoverableMerge(items, tombstoned) {
+  const list = _wsRecoverable();
+  const k = x => x.key + '|' + x.docId;
+  const idx = new Map(list.map((x, i) => [k(x), i]));
+  (items || []).forEach(it => { const j = idx.get(k(it)); if (j == null) { idx.set(k(it), list.length); list.push(Object.assign({ seenAt: Date.now() }, it)); } else if (it.revision > (list[j].revision || 0)) list[j] = Object.assign({}, list[j], it); });
+  // Lo que ya tiene copia local (recuperado o re-creado) o un borrado remoto deja de estar pendiente.
+  const dead = new Set(tombstoned || []);
+  const out = list.filter(x => {
+    if (dead.has(k(x))) return false; const spec = _WS_DOC_KEYS[x.key]; if (!spec) return false; return !_wshReadStore(x.key).some(d => String(spec.idOf(d)) === x.docId); });
+  try { localStorage.setItem(_WS_RECOVERABLE_KEY, JSON.stringify(out)); } catch (_) {}
+  _wsDocsPullSkippedAbsent = out.length;
+  return out;
+}
+// Recuperación EXPLÍCITA: el usuario elige; el documento vuelve con una revisión nueva (así el
+// resto de dispositivos lo reconocen como vigente) y se sube.
+async function _wsRecoverDoc(entry) {
+  const spec = entry && _WS_DOC_KEYS[entry.key]; if (!spec) return false;
+  // Antes de restaurar, la fila remota se vuelve a mirar: si OTRO dispositivo la borró desde la
+  // última lectura, no se resucita (el upsert de la subida no comprueba revisiones).
+  try {
+    const uid = _wsDocsSession();
+    if (uid && typeof supabaseClient !== 'undefined' && supabaseClient) {
+      const { data, error } = await supabaseClient.from(_WS_DOC_TABLE).select('doc_id,deleted_at,revision').eq('user_id', uid).eq('doc_id', entry.docId);
+      if (_wsDocsSession() !== uid) return false;
+      if (error) { try { _wsPlansRepaint(); } catch (_) {} return false; }          // sin confirmar, no se restaura
+      const row = Array.isArray(data) ? data[0] : null;
+      if (row && row.deleted_at) { _wsRecoverableMerge([], [entry.key + '|' + entry.docId]); try { _wsPlansRepaint(); } catch (_) {} return false; }
+      if (row && Number(row.revision) > (Number(entry.revision) || 0)) entry = Object.assign({}, entry, { revision: Number(row.revision) });
+    }
+  } catch (_) { return false; }
+  const store = _wshReadStore(entry.key);
+  if (!store.some(d => String(spec.idOf(d)) === entry.docId)) {
+    const doc = JSON.parse(JSON.stringify(entry.body || {}));
+    delete doc.deletedAt;
+    doc.revision = Math.max(Number(entry.revision) || 1, Number(doc.revision) || 0);
+    _wsDocStamp(doc);
+    store.push(doc);
+    if (_wshWriteStore(entry.key, store) === false) return false;
+  }
+  _wsRecoverableMerge([]);
+  try { _wsPlansRepaint(); } catch (_) {}
+  return true;
+}
+function _wsRecoverOpen() {
+  const list = _wsRecoverable(); if (!list.length) return;
+  const docs = list.map(x => ({ name: (x.body && (x.body.customName || x.body.name || x.body.title)) || t('wsrec_untitled'),
+    meta: (function () { try { return _wsTypeLabel(x.body && x.body.type) || ''; } catch (_) { return ''; } })() }));
+  _wsPickDocModal({ title: t('wsrec_title'), text: t('wsrec_text'), docs: docs, okLabel: t('wsrec_ok'),
+    onPick: (d) => { const i = docs.indexOf(d); if (i >= 0) _wsRecoverDoc(list[i]); } });
+}
 function _wsDocsPullOnce() {
   const uid = _wsDocsSession();
   if (!uid || _wsDocsPulledFor === uid || _wsDocsPullInFlight) return;
   if (!_wsCanPersist()) return;
   _wsDocsPulledFor = uid;
+  try { _wsDocsPullSkippedAbsent = _wsRecoverable().length; } catch (_) { _wsDocsPullSkippedAbsent = 0; }   // de ESTA cuenta
   _wsDocsPull().then(okd => {
     // Cualquier lectura que no terminó bien (fallo, respuesta descartada) se puede repetir.
     if (okd !== true) _wsDocsPulledFor = null;
@@ -21443,6 +21684,7 @@ async function _wsDocsPull() {
     _wsDocTableState = 'yes';
     const rows = Array.isArray(data) ? data : [];
     let touched = 0;
+    const ambiguous = [], tombstoned = [];
     for (const key in _WS_DOC_KEYS) {
       const spec = _WS_DOC_KEYS[key];
       const mine = rows.filter(r => r && r.kind === spec.kind);
@@ -21469,6 +21711,7 @@ async function _wsDocsPull() {
         // todo lo demás: una edición posterior siempre gana.
         if (cur && localPending) continue;
         if (r.deleted_at) {
+          tombstoned.push(key + '|' + String(r.doc_id));   // lo apartado como ambiguo deja de estarlo
           if (!cur) continue;                              // nunca lo tuvimos: nada que borrar
           if (cur.deletedAt) continue;                      // ya estaba marcado
           if (!(remoteRev > (Number(cur.revision) || 1))) continue;   // nuestra copia es más nueva
@@ -21479,19 +21722,21 @@ async function _wsDocsPull() {
         }
         const body = r.body && typeof r.body === 'object' ? r.body : null;
         if (!body) continue;
-        // ── RECUPERAR UN DOCUMENTO AUSENTE EN LOCAL: DESACTIVADO (SPEC 1) ─────────────
-        // Entre 319d7b7 (09-16, subida activa) y 52ccd7a (09-17, tombstones) borrar FILTRABA el
-        // array sin dejar `deleted_at`: esas filas siguen vivas en remoto. Con la estructura
-        // actual «borrado en esa ventana» y «nunca estuvo en este dispositivo» son
-        // indistinguibles, y que la fila exista no prueba que siga vigente. Así que la lectura
-        // NO añade documentos: sólo actualiza (por revisión) y borra (por tombstone) los que
-        // este dispositivo ya tiene. Se cuenta para diagnóstico. Reactivar exige un marcador de
-        // vigencia en servidor (decisión + SQL revisado), no una inferencia del cliente.
-        if (!cur) { _wsDocsPullSkippedAbsent++; continue; }
+        if (!cur) {
+          // Ausente en local. Se RECUPERA sólo si su vigencia está acreditada (ver
+          // `_wsDocVigenciaAcreditada`); si es ambiguo se aparta para recuperación EXPLÍCITA.
+          if (_wsDocVigenciaAcreditada(spec.kind, body)) { local.push(body); byId.set(String(r.doc_id), body); changed = true; }
+          // Un fondo sin su objetivo NO es un documento que el usuario pueda decidir: vuelve solo
+          // cuando su objetivo esté vivo (no tiene borrado propio).
+          else if (spec.kind !== 'ws_funding') ambiguous.push({ key: key, kind: spec.kind, docId: String(r.doc_id), revision: remoteRev, body: body });
+          continue;
+        }
         else if (remoteRev > (Number(cur.revision) || 1)) { Object.assign(cur, body); changed = true; }
       }
       if (changed) { try { localStorage.setItem(key, JSON.stringify(local)); touched++; } catch (_) {} }
     }
+    // Los ambiguos se CONSERVAN aparte (por cuenta), nunca se restauran solos ni se borran.
+    try { _wsRecoverableMerge(ambiguous, tombstoned); } catch (_) {}
     // ── LAS PREFERENCIAS, Y LA REVISIÓN QUE SÍ SE COMPARA ────────────────────
     // El comentario decía «sólo si el remoto es más reciente» y el código
     // sobrescribía SIEMPRE: un dispositivo que sólo entraba pisaba el último ajuste
@@ -24352,7 +24597,7 @@ function _renderDashboardPlans() {
     const body = st === 'loading'
       ? `<p class="wspl-note">${esc(t('wspl_loading'))}</p>`
       : st === 'remote_only'
-        ? `<p class="wspl-note is-warn">${esc(t('wspl_remote_only'))}</p>`
+        ? `<p class="wspl-note is-warn">${esc(t('wspl_recover_note')(_wsDocsPullSkippedAbsent))} <button type="button" class="wspl-link" data-ws-recover>${esc(t('wspl_recover_btn'))}</button></p>`
       : st === 'error'
         ? `<p class="wspl-note is-warn">${esc(t('wspl_error'))} <button type="button" class="wspl-link" data-ws-sync-retry>${esc(t('ws_sync_retry'))}</button></p>`
         : `<p class="wspl-note">${esc(t('wspl_empty'))} <button type="button" class="wspl-link" data-wspl-templates>${esc(t('wspl_empty_cta'))}</button></p>`;
@@ -24401,7 +24646,9 @@ function _renderDashboardPlans() {
         <button type="button" class="wspl-go" data-wspl-open="${esc(p.id)}" data-wspl-okind="${esc(it.kind)}" aria-label="${esc(t('wspl_continue') + ' — ' + nm)}">${esc(t('wspl_continue'))}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
       </article>`;
   }).join('');
-  return `<header class="wspl-head"><h2 class="wspl-title">${esc(t('wspl_title'))}</h2></header>
+  const _rec = (typeof _wsDocsPullSkippedAbsent === 'number' && _wsDocsPullSkippedAbsent > 0)
+    ? `<p class="wspl-note is-warn">${esc(t('wspl_recover_note')(_wsDocsPullSkippedAbsent))} <button type="button" class="wspl-link" data-ws-recover>${esc(t('wspl_recover_btn'))}</button></p>` : '';
+  return `<header class="wspl-head"><h2 class="wspl-title">${esc(t('wspl_title'))}</h2></header>${_rec}
     <div class="wspl-grid" id="wsPlansGrid" data-wspl-n="${docs.length}">${cards}</div>
     <span id="dashReorderHintPlans" class="intcc-sr-only">${esc(t('dash_reorder_hint_plans'))}</span>`;
 }
@@ -24510,7 +24757,7 @@ function _wsPlansWireOnce() {
       try { switchTab(dest === 'workspace' ? 'workspace' : 'intelligence'); } catch (_) {}
       return;
     }
-    const el = e.target && e.target.closest ? e.target.closest('[data-wspl-open],[data-wspl-menu],[data-wspl-templates],[data-ws-sync-retry]') : null;
+    const el = e.target && e.target.closest ? e.target.closest('[data-wspl-open],[data-wspl-menu],[data-wspl-templates],[data-ws-sync-retry],[data-ws-recover]') : null;
     // Pulsar la tarjeta abre el documento igual que «Continuar» (salvo sus propios controles, y
     // salvo el clic que sigue a un arrastre).
     if (!el) {
@@ -24524,6 +24771,7 @@ function _wsPlansWireOnce() {
     const mid = el.getAttribute('data-wspl-menu');
     if (mid) { e.preventDefault(); e.stopPropagation(); _wsPlansMenu(el, mid, el.getAttribute('data-wspl-mkind') || 'workspace'); return; }
     if (el.hasAttribute('data-ws-sync-retry')) { try { _wsDocsRetry(); } catch (_) {} return; }
+    if (el.hasAttribute('data-ws-recover')) { try { _wsRecoverOpen(); } catch (_) {} return; }
     if (el.hasAttribute('data-wspl-templates')) {
       _wshView = 'home'; _wsTab = 'templates';
       try { switchTab('workspace'); } catch (_) {}
@@ -25784,7 +26032,7 @@ function _wsbSaveScenario(id, btn) {
     const p = { projected: rowS.projected, contributed: rowS.contributed };
     const store = _wshReadStore(_WSH_SCENARIOS_KEY);
     if (store.some(x => x && x.scenarioId === id)) return; // already saved
-    store.push({
+    store.push(_wsDocStamp({
       scenarioId: id,
       name: s.name,
       monthly: s.monthly,
@@ -25802,7 +26050,7 @@ function _wsbSaveScenario(id, btn) {
       diffByContribution: Math.round(rowS.byContribution),
       diffByGrowth: Math.round(rowS.byGrowth),
       createdAt: Date.now(),
-    });
+    }));
     _wshWriteStore(_WSH_SCENARIOS_KEY, store);
     if (btn) { btn.textContent = t('wsb_saved'); btn.classList.add('is-saved'); btn.setAttribute('disabled', ''); }
   } catch (_) {}
@@ -26178,7 +26426,9 @@ function _ws4Duplicate() {
 function _ws4Delete() {
   const p = _ws4Get(); if (!p) return;
   _wsConfirm(() => {
-    _ws4SaveAll(_ws4Projects().filter(x => x && x.id !== p.id));
+    // Borrado SEGURO (tombstone): filtrar aquí guardaba la lista sin lápidas — borraba TODAS las
+    // anteriores y dejaba este documento resucitable por la lectura remota.
+    if (_ws4ProjectsRaw().some(x => x && x.id === p.id)) _ws4Tombstone(p.id);
     _ws4Draft = null; _ws4ActiveId = null; _wshView = 'home'; renderWorkspaceHome();
   });
 }
@@ -26762,7 +27012,8 @@ function _wsFundRead() { return _wshReadStore(_WSH_FUNDING_KEY); }
 function _wsFundSaveAll(list) { _wshWriteStore(_WSH_FUNDING_KEY, list); }
 function _wsFundAdd(goalId, amount, type, note) {
   const list = _wsFundRead();
-  list.push({ id: 'fnd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), goalId, amount: Math.max(0, Number(amount) || 0), type: type === 'remove' ? 'remove' : 'add', note: note || '', createdAt: Date.now() });
+  // Sellado al nacer: la revisión en el cuerpo acredita su vigencia en otro dispositivo.
+  list.push(_wsDocStamp({ id: 'fnd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), goalId, amount: Math.max(0, Number(amount) || 0), type: type === 'remove' ? 'remove' : 'add', note: note || '', createdAt: Date.now() }));
   _wsFundSaveAll(list);
 }
 function calculateGoalFunding(goalId) {
@@ -35852,6 +36103,9 @@ function _aurixRangeReturn(range) {
   const neutral = _aurixFlowNeutralize(work, r);
   const adj = neutral.adjusted;
   const first = adj[0], last = adj[adj.length - 1];
+  // Misma puerta que el gráfico: no se publica (ni se persiste en performance_state) un % que compara
+  // bases de tipo distintas.
+  if (first && (typeof _aurixFxBasisLimited === 'function' && _aurixFxBasisLimited(first.ts))) { out.fxBasisLimited = true; return out; }
 
   out.points     = work.length;
   out.baselineTs = work[0].ts;
@@ -36034,6 +36288,10 @@ function _aurixInvestablePerformance(range) {
     maxNoFlowJumpPct: null, maxIntervalJumpPct: null,
     index: null,                       // M.03 C — sólo se rellena si valid === true
   };
+  // Con el tipo EUR/USD NO actual la valoración presente es aproximada: no se publica una
+  // rentabilidad (ni un hecho de Intelligence) que dependa de ella (SPEC 1).
+  // Sólo los activos EN EUR hacen depender el % del tipo (con base EUR y activos USD el % no cambia).
+  try { if (_aurixFxEurState().status !== 'live' && _aurixFxEurExposureNative() > 0) { out.fallbackReason = 'fx_rate_not_current'; return out; } } catch (_) {}
   try {
     // 1 · AUTHORITATIVE INVESTABLE SERIES (real estate already excluded).
     let elig = null;
@@ -36053,6 +36311,8 @@ function _aurixInvestablePerformance(range) {
 
     const tFirst = pts[0].ts, tLast = pts[pts.length - 1].ts;
     out.startAt = tFirst; out.endAt = tLast;
+    // Con el inicio REAL de la ventana: si compara bases de tipo distintas, se limita.
+    if ((typeof _aurixFxBasisLimited === 'function' && _aurixFxBasisLimited(tFirst))) { out.valid = false; out.fallbackReason = 'fx_basis_change'; return out; }
     // INT.06B — HOW MUCH OF THE NOMINAL WINDOW WAS ACTUALLY MEASURED.
     // The arithmetic was always right, but the LABEL could overstate: measured on
     // real code, a portfolio with 4 days of history returned valid 7D with a span
@@ -37318,6 +37578,9 @@ function _aurixFactLedger(opts) {
     // (a contribution genuinely raises the level). It is never a return claim.
     let peak = lvlSeries[0].value, peakIdx = 0;
     for (let i = 1; i < lvlSeries.length; i++) { if (lvlSeries[i].value > peak) { peak = lvlSeries[i].value; peakIdx = i; } }
+    // Máximos sobre una serie que mezcla bases de tipo: ni «nuevo máximo» ni «por debajo del máximo».
+    const _fxLvlLimited = (typeof _aurixFxBasisLimited === 'function' && _aurixFxBasisLimited(lvlSeries[0].ts));
+    if (_fxLvlLimited) { peakIdx = -1; gap(_AURIX_FACT_FAMILY.WEALTH_LEVEL, 'investable_all_time_high', _AURIX_FACT_STATUS.AVAILABLE, 'fx_basis_change'); }
     if (peakIdx === lvlSeries.length - 1 && lvlSeries.length >= 3) {
       push({
         semanticKey: 'investable_all_time_high',
@@ -37410,6 +37673,10 @@ function _aurixFactLedger(opts) {
       if (!(lastV > 0)) {
         gap(_AURIX_FACT_FAMILY.WEALTH_LEVEL, 'investable_level_change',
           _AURIX_FACT_STATUS.LOW_CONFIDENCE, 'end_value_not_positive');
+      } else if ((typeof _aurixFxBasisLimited === 'function' && _aurixFxBasisLimited(lvlStartAt))) {
+        // La ventana compara puntos valorados con bases de tipo distintas: no es un cambio patrimonial.
+        gap(_AURIX_FACT_FAMILY.WEALTH_LEVEL, 'investable_level_change',
+          _AURIX_FACT_STATUS.AVAILABLE, 'fx_basis_change', { startAt: lvlStartAt, endAt: lvlEndTs });
       } else if (incorporationInWindow || baselineIsRegistration) {
         gap(_AURIX_FACT_FAMILY.WEALTH_LEVEL, 'investable_level_change',
           _AURIX_FACT_STATUS.AVAILABLE, _AURIX_EV_GAP.LEVEL_WINDOW_HAS_INCORPORATION,
@@ -37445,7 +37712,7 @@ function _aurixFactLedger(opts) {
       // siendo el del primer día" con un importe idéntico al de hoy: verdadero y
       // vacío. Mismo umbral que el cambio de nivel — es la misma pregunta.
       const belowPeakBy = peak - lastV;
-      if (peakIdx !== lvlSeries.length - 1 && lastV > 0
+      if (peakIdx >= 0 && peakIdx !== lvlSeries.length - 1 && lastV > 0
           && belowPeakBy >= _AURIX_FACT_MATERIAL.levelDeltaShare * lastV) {
         const peakTs = lvlSeries[peakIdx].ts, lastTs = lvlSeries[lvlSeries.length - 1].ts;
         let netSincePeak = 0, netKnown = true;
@@ -42805,6 +43072,8 @@ function _aurixComputePeriodReturn(range, first, last) {
   try {
     if (!first || !last || !Number.isFinite(first.value) || !Number.isFinite(last.value)) return out;
     const r = String(range || 'all').toLowerCase();
+    // Ventana que empieza en un punto de base de tipo distinta (SPEC 1): se LIMITA, no se adivina.
+    if ((typeof _aurixFxBasisLimited === 'function' && _aurixFxBasisLimited(first.ts))) { out.returnSuppressedReason = 'fx_basis_change'; out.fxBasisLimited = true; return out; }
     const startV = first.value, endV = last.value;
     const rawDelta = endV - startV;
     out.grossPct = startV !== 0 ? +(((endV - startV) / startV) * 100).toFixed(4) : null;   // wealth growth (line), NOT return
@@ -49389,6 +49658,8 @@ function _aurixPaintReturnBadge(el, surface) {
       const _r = (typeof activeRange !== 'undefined' ? activeRange : '24h');
       const _pub = (typeof _aurixPublishedChartFor === 'function') ? _aurixPublishedChartFor(_r) : null;
       _aurixEmergencyPaintBadgeNode(el, _pub || buildProductionPortfolioChart(_r), surface);
+      // La nota del tipo lee el MISMO resultado publicado que acaba de pintarse.
+      if (typeof _aurixFxMarkBadge === 'function') _aurixFxMarkBadge(el, _pub || ((typeof _aurixPublishedChartFor === 'function') ? _aurixPublishedChartFor(_r) : null));
       return;
     }
     const snap = (typeof computePerformanceSnapshot === 'function') ? computePerformanceSnapshot(typeof activeRange !== 'undefined' ? activeRange : '24h') : null;
@@ -49401,6 +49672,7 @@ function _aurixPaintReturnBadge(el, surface) {
       el.innerHTML = _aurixReturnPendingHTML();
       el.className = 'chart-change calculating';
     }
+    if (typeof _aurixFxMarkBadge === 'function') _aurixFxMarkBadge(el);
     try { _aurixRecordRender(surface === 'mobile' ? 'mobileBadge' : 'desktopBadge', snap); } catch (_) {}
     try { console.log('[UI][RETURN_BADGE_PAINT]', { surface: surface, found: true, state: snap && snap.state, displayedReturnPct: ready ? snap.displayedReturnPct : null, producerHash: snap && snap.producerHash, textBefore: textBefore, textAfter: el.textContent }); } catch (_) {}
   } catch (_) {}
@@ -58504,11 +58776,13 @@ function setUpdateStatus(state) {
     if (st.status !== 'live' && _aurixFxEurInvolved()) _fxSuffix = t('fxHeroApprox');
     const tv = document.getElementById('totalValue');
     if (tv) {
-      if (_fxSuffix) { tv.setAttribute('data-fx-approx', st.status); tv.setAttribute('title', t('fxRateNone') && (st.status === 'none' ? t('fxRateNone') : t('fxHeroApproxLong'))); tv.setAttribute('aria-label', tv.textContent + ' — ' + t('fxHeroApproxLong')); }
-      else { tv.removeAttribute('data-fx-approx'); tv.removeAttribute('title'); tv.removeAttribute('aria-label'); }
+      _aurixFxBubbleWire();
+      if (_fxSuffix) { tv.setAttribute('data-fx-approx', st.status); _aurixFxExplainBind(tv, st.status === 'none' ? t('fxRateNone') : _aurixFxNoteText(st)); }
+      else { tv.removeAttribute('data-fx-approx'); _aurixFxExplainBind(tv, ''); }
     }
   } catch (_) {}
   updateTextEl.textContent = msg[state] ?? '';
+  try { _aurixFxMarkCategories(); } catch (_) {}
   // El texto corto sólo desde 768 px (CSS): en móvil el hero no cambia de forma — basta el «≈».
   if (_fxSuffix && (state === 'ok' || state === 'error')) {
     const sp = document.createElement('span'); sp.className = 'update-fx-note'; sp.textContent = _fxSuffix;

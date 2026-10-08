@@ -30288,3 +30288,12 @@ body.ws-cover .aurix-wsh { max-width: none; }
 .settings-fx-note.is-warn { color: var(--aurix-warning); }
 #totalValue[data-fx-approx]::before { content: '≈ '; opacity: .7; }
 @media (max-width: 767px) { .update-fx-note { display: none; } }
+
+/* Explicación accesible de una cifra afectada por el tipo EUR/USD (toque, clic o teclado). */
+[data-fx-explain] { cursor: help; }
+[data-fx-explain]:focus-visible { outline: 2px solid var(--aurix-warning); outline-offset: 3px; border-radius: 6px; }
+.chart-change[data-fx-mark] .wsc-metric-val::after,
+.cat-card-value[data-fx-approx]::before { content: '≈ '; opacity: .7; }
+.chart-change[data-fx-mark] .wsc-metric-val::after { content: ' *'; }
+.aurix-fx-bubble { position: fixed; z-index: 2147482000; padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.45;
+  color: var(--text-muted); background: rgba(10, 14, 24, .97); border: 1px solid rgba(233, 168, 87, .45); box-shadow: 0 8px 24px rgba(0,0,0,.45); }
