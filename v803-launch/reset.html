@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="demo/aurix-demo-runtime.js"></script>
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <!-- SECURITY-HARDENING-V1 · credential-entry page: strictest policy of the set.
+       No remote images, no API calls beyond Supabase Auth, no framing allowed. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; form-action 'self'; manifest-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <script>
+    // SECURITY-HARDENING-V1 · clickjacking guard (password entry must never be framed).
+    (function () {
+      try {
+        if (window.top === window.self) return;
+        try { window.top.location = window.self.location; }
+        catch (_) { document.documentElement.style.display = 'none'; }
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- RESET-CANONICAL-1: canonical password reset entrypoint. -->
+  <!-- AURIX-APP-DOMAIN-READY-1: no <base href> — relative links work under
+       /Aurix/ (GitHub Pages) and at the root custom domain. -->
+  <style>
+    /* AURIX-MOBILE-HERO-LOADER-CHART-PREMIUM-1: dark first frame ahead of the
+       render-blocking styles.css so there is no white flash before paint.
+       Matches --bg (#05070f) — the rendered body background. */
+    html, body { background:#05070f; margin:0; }
+  </style>
+  <title>AURIX — Nueva contraseña</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#0B0F1A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Aurix">
+  <script>
+    // PWA-CONSISTENCY-1: global build identifier + standalone detection.
+    // Runs synchronously before any other script so a stale build cannot
+    // serve a half-cached app. Same user + same account must render the
+    // same code on Safari mobile, the iOS home-screen PWA, and desktop.
+    (function() {
+      window.AURIX_BUILD = 'pwa-consistency-1';
+      try {
+        var KEY     = 'aurix_build';
+        // P0 MOBILE-BOOT-HARDFIX — NO reload on build change (the purge+reload could
+        // infinite-loop on a stale-cached page). Just record the build + best-effort,
+        // non-blocking cleanup of any legacy service worker / cache. Always boots.
+        try { localStorage.setItem(KEY, window.AURIX_BUILD); } catch (_) {}
+        try {
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) { regs.forEach(function(r) { try { r.unregister(); } catch (_) {} }); }).catch(function() {});
+          }
+          if (typeof caches !== 'undefined' && caches.keys) {
+            caches.keys().then(function(keys) { keys.forEach(function(k) { try { caches.delete(k); } catch (_) {} }); }).catch(function() {});
+          }
+        } catch (_) {}
+        // Standalone detection — iOS Safari + modern display-mode media query.
+        var iosStandalone = window.navigator.standalone === true;
+        var mqStandalone  = false;
+        try { mqStandalone = window.matchMedia('(display-mode: standalone)').matches; } catch (_) {}
+        var isStandalone  = iosStandalone || mqStandalone;
+        window.IS_STANDALONE     = isStandalone;
+        window.IS_IOS_STANDALONE = iosStandalone;
+        document.documentElement.setAttribute('data-standalone', isStandalone ? 'true' : 'false');
+        if (iosStandalone) document.documentElement.setAttribute('data-ios-standalone', 'true');
+      } catch (_) { /* boot guard must never throw */ }
+    })();
+  </script>
+  <link href="vendor/inter.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-5);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: -30%;
+      background:
+        radial-gradient(circle 750px at 22% 32%, rgba(79,142,247,.10) 0%, transparent 60%),
+        radial-gradient(circle 600px at 80% 74%, rgba(39,199,104,.06) 0%, transparent 60%);
+      animation: beta-bg-drift 26s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    .auth-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 200ms ease, background 200ms ease;
+    }
+
+    .auth-input:focus {
+      border-color: rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .auth-input::placeholder { color: var(--text-dim); }
+    .auth-input:disabled     { opacity: 0.35; }
+
+    .auth-btn {
+      width: 100%;
+      margin-top: 2px;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(79, 142, 247, 0.25);
+      background: rgba(79, 142, 247, 0.14);
+      color: #7fb8ff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 160ms ease, transform 120ms ease;
+    }
+
+    .auth-btn:hover:not(:disabled) { opacity: 0.82; }
+    .auth-btn:active:not(:disabled) { transform: scale(0.97); }
+    .auth-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .auth-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #auth-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+    }
+
+    .auth-message {
+      font-size: 12px;
+      text-align: center;
+      min-height: 16px;
+      letter-spacing: 0.01em;
+    }
+
+    .auth-link {
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.01em;
+      transition: color 160ms ease;
+      margin-top: 2px;
+    }
+
+    .auth-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <div class="beta-container">
+
+    <div class="beta-logo-above">
+      <span class="logo-aurix">AURIX</span>
+    </div>
+
+    <div class="beta-card">
+      <div class="beta-access-label">Nueva contraseña</div>
+      <p class="beta-hint">Elige una contraseña segura</p>
+
+      <div class="auth-form">
+        <h2 id="auth-title">Establecer contraseña</h2>
+        <input id="newPassword" type="password" class="auth-input"
+               placeholder="Nueva contraseña"
+               autocomplete="new-password">
+        <button id="updatePassword" class="auth-btn" disabled>Guardar contraseña</button>
+        <p id="message" class="auth-message"></p>
+        <p class="auth-link" id="backToLogin" onclick="window.location.href='login.html'">
+          Volver al inicio de sesión
+        </p>
+      </div>
+
+      <!-- M.06 · el sello de beta privada era permanente en una página que ve un cliente. -->
+    <p class="beta-version">Aurix &bull; v1.0</p>
+    </div>
+
+  </div>
+  <script src="config.js"></script>
+  <script>
+    'use strict';
+
+    const msgEl  = document.getElementById('message');
+    const btn    = document.getElementById('updatePassword');
+    const passEl = document.getElementById('newPassword');
+
+    function setMsg(text, type) {
+      msgEl.textContent = text;
+      msgEl.style.color = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--text-muted)';
+    }
+
+    // ── Supabase client ────────────────────────────────────────
+    let client = null;
+    if (typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined' && window.supabase) {
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    if (!client) {
+      setMsg('Supabase no disponible.', 'error');
+    } else {
+      // Supabase exchanges the recovery token from the URL hash automatically.
+      // Enable the button only once a PASSWORD_RECOVERY session is confirmed.
+      client.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          btn.disabled = false;
+          setMsg('Introduce tu nueva contraseña.', '');
+        }
+      });
+    }
+
+    btn.addEventListener('click', async () => {
+      const password = passEl.value;
+
+      if (!password || password.length < 6) {
+        setMsg('La contraseña debe tener al menos 6 caracteres.', 'error');
+        return;
+      }
+
+      btn.disabled    = true;
+      btn.textContent = 'Guardando…';
+
+      const { error } = await client.auth.updateUser({ password });
+
+      if (error) {
+        setMsg(error.message, 'error');
+        btn.disabled    = false;
+        btn.textContent = 'Guardar contraseña';
+      } else {
+        setMsg('Contraseña actualizada. Ya puedes iniciar sesión.', 'success');
+        btn.textContent = '¡Listo!';
+        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+      }
+    });
+
+    passEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !btn.disabled) btn.click();
+    });
+  </script>
+
+</body>
+</html>

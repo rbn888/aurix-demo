@@ -1,0 +1,1287 @@
+/* ============================================================
+   AURIX — Official landing (aurixsystem.io)
+   Premium, minimalist, CSS-only. Deep navy + electric blue.
+   ============================================================ */
+
+:root{
+  --bg:        #05070f;
+  --bg-2:      #070b16;
+  --bg-3:      #0a1020;
+  --surface:   rgba(255,255,255,0.035);
+  --surface-2: rgba(255,255,255,0.05);
+  --border:    rgba(255,255,255,0.08);
+  --border-hi: rgba(138,178,255,0.26);
+
+  --text:      #f4f7fc;
+  /* AURIX-LANDING-POLISH-1: lifted muted/dim for AA-friendlier contrast on the
+     dark surface (was .64/.42) without going full bright-white. */
+  --muted:     rgba(228,236,251,0.72);
+  /* UI-POLISH-V1: aux/secondary labels nudged for slightly better legibility. */
+  --dim:       rgba(222,231,248,0.60);
+
+  --accent:    #4f8ef7;
+  --accent-2:  #7db8ff;
+  --accent-3:  #cfe6ff;
+  --green:     #27c768;
+
+  --maxw: 1200px;
+  --pad: 24px;
+  /* UI-POLISH-V1: one radius family — pill / control / card / large. Stray
+     values (10/11/13/14/16/22/26/30px) collapse onto these for consistency. */
+  --radius-pill: 999px;
+  --radius-sm: 12px;   /* controls, chips, tabs */
+  --radius: 18px;      /* cards (was 20) */
+  --radius-lg: 24px;   /* hero / large surfaces */
+  --ease: cubic-bezier(.22,1,.36,1);
+  /* UI-POLISH-V1: single microtransition timing (within 180–220ms), one Aurix
+     focus halo, and a premium (finer, faintly illuminated) divider hairline. */
+  --t: .2s;
+  --ring: 0 0 0 4px rgba(79,142,247,.18);
+  --divider: rgba(130,170,255,.10);
+
+  --h1: clamp(40px, 6.2vw, 86px);
+  --h2: clamp(28px, 3.8vw, 50px);
+  --lead: clamp(16px, 1.5vw, 21px);
+}
+
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  font-family:'Inter', system-ui, -apple-system, "Segoe UI", sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  /* LP.MOB.01 — `clip` (with `hidden` fallback) avoids turning <body> into a
+     scroll container, which on iOS in-app browsers (Telegram/Instagram/etc.)
+     can make sticky/fixed descendants drift during momentum scroll. */
+  overflow-x:hidden;
+  overflow-x:clip;
+  -webkit-overflow-scrolling:touch;
+}
+a{ color:inherit; text-decoration:none; }
+h1,h2,h3,h4,p{ margin:0; }
+img,svg{ display:block; max-width:100%; }
+
+.container{ width:100%; max-width:var(--maxw); margin:0 auto; padding:0 var(--pad); }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  gap:8px; height:42px; padding:0 20px;
+  border-radius:var(--radius-sm); font-size:14px; font-weight:600; letter-spacing:-.01em;
+  border:1px solid transparent; cursor:pointer; white-space:nowrap;
+  transition:transform .18s var(--ease), background .18s var(--ease),
+             border-color .18s var(--ease), box-shadow var(--t) var(--ease), color .18s;
+}
+.btn-lg{ height:52px; padding:0 28px; font-size:15.5px; border-radius:var(--radius-sm); }
+.btn-sm{ height:36px; padding:0 14px; font-size:13px; }
+.btn-block{ width:100%; }
+.btn-primary{
+  background:linear-gradient(180deg, #5a97f9, #3f7fe8);
+  color:#fff;
+  box-shadow:0 8px 26px -10px rgba(79,142,247,.7), inset 0 1px 0 rgba(255,255,255,.22);
+}
+.btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 34px -10px rgba(79,142,247,.8), inset 0 1px 0 rgba(255,255,255,.3); }
+.btn-ghost{
+  background:rgba(255,255,255,.04);
+  border-color:var(--border);
+  color:var(--text);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+.btn-ghost:hover{ border-color:var(--border-hi); background:rgba(138,178,255,.08); transform:translateY(-2px); }
+
+/* AURIX-LANDING-MOBILE-CTA — a visible primary "Request Access" on the mobile hero. The header CTA is
+   hidden ≤860px (.header-right .btn → display:none) and otherwise only lives inside the hamburger, so
+   mobile users never saw it. Same action (#early-access). Desktop is unchanged: hidden ≥861px. */
+/* LANDING POLISH — the Hero CTA is MOBILE-ONLY again (desktop's single entry
+   point is the navbar CTA; no duplicate "Enter Aurix" on desktop, no Hero
+   countdown). Mobile keeps the prominent Hero CTA exactly as before. */
+.hero-cta-mobile{ display:none; }
+@media (max-width:860px){
+  .hero-cta-mobile{ display:flex; flex-direction:column; align-items:center; gap:9px; margin-top:22px; width:100%; }
+  /* CTA-GET-STARTED-1 — the Hero CTA read as a full-width bar on phones. Width only:
+     `auto` + a min-width floor so it stays a compact, centred pill with visible side air.
+     Height (48px), font-size, colour, glow and radius are untouched, and .btn already sets
+     white-space:nowrap, so "Get Started" can never wrap. Centring is inherited from the
+     parent's align-items:center. Desktop is unreachable here — .hero-cta-mobile is
+     display:none above 860px AND this rule lives inside @media (max-width:860px). */
+  .hero-cta-mobile .btn{ width:auto; min-width:216px; padding:0 34px; height:48px; font-size:15px; }
+  .hero-cta-note{ font-size:12.5px; letter-spacing:.01em; color:var(--accent-3); opacity:.82;
+    text-decoration:none; transition:opacity .18s var(--ease); }
+  .hero-cta-note:hover{ opacity:1; }
+}
+
+/* Locked CTA before launch — premium disabled look; protection is layered
+   (aria-disabled + tabindex=-1 + href neutralised + capture-phase click guard). */
+.btn.is-launch-locked{ opacity:.5; cursor:not-allowed; pointer-events:none; filter:saturate(.72); }
+.launch-count{ font-variant-numeric:tabular-nums; }
+
+/* Small, elegant launch-state pill shown when the (locked) navbar CTA is tapped
+   before launch. Not a modal / popup / alert — a quiet toast that auto-dismisses. */
+.launch-toast{
+  position:fixed; top:76px; right:22px; z-index:200;
+  padding:10px 16px; border-radius:12px;
+  background:rgba(13,18,30,.92); border:1px solid rgba(79,142,247,.28);
+  color:var(--text); font-size:13px; font-weight:600; letter-spacing:.01em;
+  font-variant-numeric:tabular-nums;
+  box-shadow:0 12px 34px -16px rgba(4,8,16,.9), 0 0 0 1px rgba(255,255,255,.02) inset;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  opacity:0; transform:translateY(-6px); pointer-events:none;
+  transition:opacity .22s var(--ease), transform .22s var(--ease);
+}
+.launch-toast.is-visible{ opacity:1; transform:translateY(0); }
+@media (max-width:860px){ .launch-toast{ top:auto; bottom:22px; right:16px; left:16px; text-align:center; } }
+@media (prefers-reduced-motion:reduce){ .launch-toast{ transition:opacity .12s linear; transform:none; } }
+
+.eyebrow{
+  display:inline-block; font-size:12px; font-weight:700; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--accent-2);
+  padding:6px 12px; border:1px solid var(--border); border-radius:999px;
+  background:rgba(79,142,247,.06);
+}
+.accent{ color:var(--accent-2); }
+
+/* ── Header ──────────────────────────────────────────── */
+.site-header{
+  position:fixed; inset:0 0 auto 0; z-index:100;
+  transition:background .3s var(--ease), backdrop-filter .3s var(--ease),
+             border-color .3s var(--ease), height .3s var(--ease);
+  border-bottom:1px solid transparent;
+}
+.header-inner{
+  display:flex; align-items:center; justify-content:space-between;
+  height:76px; transition:height .3s var(--ease);
+}
+.site-header.scrolled{
+  background:rgba(7,11,22,.72);
+  backdrop-filter:saturate(160%) blur(16px);
+  -webkit-backdrop-filter:saturate(160%) blur(16px);
+  border-bottom-color:var(--border);
+}
+.site-header.scrolled .header-inner{ height:62px; }
+
+.brand{
+  font-weight:900; font-size:20px; letter-spacing:.26em; padding-left:.26em;
+  /* Electric-blue refinement: brighter highlight → vivid Aurix blue, with a
+     very subtle glow (drop-shadow works on clipped text where text-shadow can't).
+     Premium/institutional — not neon. */
+  background:linear-gradient(96deg,#eaf3ff,#7db8ff 38%,#3a86ff);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+  filter:drop-shadow(0 0 10px rgba(79,142,247,.28));
+}
+.nav-center{ display:flex; gap:34px; }
+.nav-center a{ font-size:14.5px; color:var(--muted); font-weight:500; transition:color .18s; }
+.nav-center a:hover{ color:var(--text); }
+
+.header-right{ display:flex; align-items:center; gap:14px; }
+.lang-toggle{ display:flex; align-items:center; gap:6px; }
+.lang-btn{
+  background:none; border:none; cursor:pointer; padding:2px 4px;
+  font:inherit; font-size:13px; font-weight:600; color:var(--dim);
+  transition:color .18s var(--ease), text-shadow .18s var(--ease);
+}
+.lang-btn:hover{ color:var(--text); }
+/* Active language: electric Aurix blue + a very subtle glow so it reads as the
+   selected state at a glance; inactive stays premium grey (--dim). */
+.lang-btn.active{ color:var(--accent-2); font-weight:700; text-shadow:0 0 9px rgba(125,184,255,.42); }
+.lang-sep{ color:var(--dim); font-size:12px; opacity:.7; }
+
+.menu-toggle{ display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:8px; }
+.menu-toggle span{ width:22px; height:2px; background:var(--text); border-radius:2px; transition:var(--t) var(--ease); }
+body.menu-open .menu-toggle span:nth-child(1){ transform:translateY(7px) rotate(45deg); }
+body.menu-open .menu-toggle span:nth-child(2){ opacity:0; }
+body.menu-open .menu-toggle span:nth-child(3){ transform:translateY(-7px) rotate(-45deg); }
+
+/* Mobile menu */
+.mobile-menu{
+  position:fixed; inset:62px 0 auto 0; z-index:99;
+  background:rgba(7,11,22,.96); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--divider);
+  padding:18px var(--pad) 28px;
+  transform:translateY(-12px); opacity:0; pointer-events:none;
+  transition:opacity .25s var(--ease), transform .25s var(--ease);
+}
+body.menu-open .mobile-menu{ opacity:1; transform:none; pointer-events:auto; }
+.mobile-nav{ display:flex; flex-direction:column; }
+.mobile-nav a{ padding:14px 0; font-size:18px; font-weight:600; border-bottom:1px solid var(--divider); }
+.mobile-actions{ display:flex; flex-direction:column; gap:10px; margin:18px 0; }
+.mobile-lang{ display:flex; align-items:center; gap:8px; justify-content:center; }
+@media (min-width:861px){ .mobile-menu{ display:none; } }
+
+/* ── Hero ────────────────────────────────────────────── */
+.hero{ position:relative; padding:150px 0 90px; overflow:hidden; }
+.hero-bg{
+  position:absolute; inset:-20% -10% auto -10%; height:120%; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(60% 50% at 22% 18%, rgba(79,142,247,.22) 0%, transparent 60%),
+    radial-gradient(45% 40% at 88% 8%, rgba(125,184,255,.14) 0%, transparent 60%),
+    radial-gradient(70% 60% at 50% 120%, rgba(40,60,120,.18) 0%, transparent 60%);
+}
+.hero-inner{ position:relative; z-index:1; display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center; }
+.hero-copy{ max-width:620px; }
+.hero-title{
+  font-size:var(--h1); font-weight:800; letter-spacing:-.035em; line-height:1.02;
+  margin:22px 0 22px;
+  background:linear-gradient(180deg,#ffffff,#bcd0ee);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+}
+.hero-sub{ font-size:var(--lead); color:var(--muted); max-width:540px; }
+.hero-cta{ display:flex; gap:14px; margin-top:34px; flex-wrap:wrap; }
+
+/* ── Product preview placeholders (stylized, no real data) ── */
+.preview-card{
+  position:relative; border:1px solid var(--border); border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.014));
+  box-shadow:0 40px 90px -50px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
+  padding:20px; overflow:hidden;
+}
+.preview-card::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(80% 60% at 70% 0%, rgba(79,142,247,.10), transparent 60%);
+}
+.preview-chip{
+  position:absolute; top:14px; right:14px; z-index:2;
+  font-size:10.5px; font-weight:600; letter-spacing:.04em; color:var(--accent-2);
+  padding:4px 9px; border:1px solid var(--border-hi); border-radius:999px;
+  background:rgba(79,142,247,.08);
+}
+.preview-card--hero{ transform:perspective(1400px) rotateY(-8deg) rotateX(3deg); transform-style:preserve-3d; }
+.pv-header{ display:flex; gap:7px; margin-bottom:18px; }
+.pv-dot{ width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.12); }
+.pv-skel{ border-radius:7px; background:linear-gradient(90deg, rgba(255,255,255,.10), rgba(255,255,255,.05)); }
+.pv-skel--label{ width:42%; height:11px; margin-bottom:12px; }
+.pv-skel--value{ width:64%; height:30px; border-radius:9px; background:linear-gradient(90deg, rgba(125,184,255,.34), rgba(79,142,247,.16)); }
+.pv-skel--meta{ width:34%; height:10px; margin-top:12px; }
+.pv-chart{ margin:18px 0 14px; height:90px; }
+.pv-chart svg{ width:100%; height:100%; }
+.pv-alloc{ display:flex; flex-direction:column; gap:9px; }
+.pv-bar{ display:block; height:6px; border-radius:999px; background:rgba(255,255,255,.06); overflow:hidden; }
+.pv-bar i{ display:block; height:100%; background:var(--accent); border-radius:999px; }
+
+.preview-stage{ position:relative; display:flex; justify-content:center; align-items:flex-end; gap:0; margin-top:54px; }
+.preview-card--desktop{ width:min(760px,100%); }
+.pv-grid{ display:grid; grid-template-columns:1fr 1.1fr; gap:22px; align-items:center; }
+.pv-col--chart svg{ width:100%; height:110px; }
+.pv-tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:20px; }
+.pv-tile{ border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; background:rgba(255,255,255,.02); }
+.pv-tile-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-bottom:12px; }
+.pv-bar2{ display:block; height:4px; border-radius:999px; background:rgba(255,255,255,.06); }
+.pv-bar2 b{ display:block; height:100%; background:var(--accent); border-radius:999px; }
+.preview-card--mobile{
+  width:208px; margin-left:-56px; margin-bottom:-26px; align-self:flex-end;
+  border-radius:var(--radius-lg); box-shadow:0 40px 80px -40px rgba(0,0,0,.95);
+}
+.pv-ring{ margin:18px auto 4px; width:130px; }
+
+/* ── Sections ────────────────────────────────────────── */
+/* Tightened vertical rhythm (104 → 88 → 72) — tighter premium cadence between
+   blocks without compressing; keeps air while shortening the page. */
+.section{ position:relative; padding:72px 0; }
+.section-title{ font-size:var(--h2); font-weight:800; letter-spacing:-.03em; line-height:1.08; max-width:18ch; }
+.section--workspace .section-title{ max-width:none; }
+.section-lead{ font-size:var(--lead); color:var(--muted); max-width:60ch; margin-top:18px; }
+
+/* Problem */
+.section--problem{ border-top:1px solid var(--divider); }
+.frag-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin:42px 0 50px; }
+.frag{
+  padding:22px 14px; text-align:center; border:1px dashed var(--border);
+  border-radius:var(--radius-sm); color:var(--muted); font-weight:600; font-size:14.5px;
+  background:rgba(255,255,255,.015);
+}
+.pain-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.pain h3{ font-size:18px; font-weight:700; letter-spacing:-.01em; margin-bottom:8px; }
+.pain p{ color:var(--muted); font-size:15px; }
+
+/* Solution */
+.asset-grid{ display:flex; flex-wrap:wrap; gap:10px; margin:40px 0 46px; }
+.asset{
+  padding:9px 16px; border:1px solid var(--border); border-radius:999px;
+  font-size:14px; font-weight:600; color:var(--text); background:var(--surface);
+}
+.feature-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.feature{
+  padding:26px 24px; border:1px solid var(--border); border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.012));
+  transition:transform .22s var(--ease), border-color .22s var(--ease), box-shadow var(--t) var(--ease);
+}
+.feature:hover{ transform:translateY(-4px); border-color:var(--border-hi); box-shadow:0 24px 50px -34px rgba(8,12,24,.9); }
+.feature h3{ font-size:17.5px; font-weight:700; margin-bottom:8px; letter-spacing:-.01em; }
+.feature p{ color:var(--muted); font-size:14.5px; }
+
+/* Preview section bg */
+.section--preview{ background:linear-gradient(180deg, transparent, rgba(79,142,247,.04), transparent); }
+
+/* Workspace */
+.section--workspace{ border-top:1px solid var(--divider); }
+.ws-inner{ display:grid; grid-template-columns:1fr 1.05fr; gap:54px; align-items:center; }
+.ws-copy .section-title{ margin-top:18px; }
+.ws-tags{ display:flex; flex-wrap:wrap; gap:10px; margin-top:26px; }
+.tag{ font-size:13px; font-weight:600; padding:7px 13px; border-radius:999px; border:1px solid var(--border-hi); color:var(--accent-2); background:rgba(79,142,247,.07); }
+.ws-cards{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.ws-card{
+  padding:24px 22px; border:1px solid var(--border); border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.012));
+  transition:transform .22s var(--ease), border-color .22s var(--ease), box-shadow var(--t) var(--ease);
+}
+.ws-card:hover{ transform:translateY(-4px); border-color:var(--border-hi); box-shadow:0 24px 50px -34px rgba(8,12,24,.9); }
+.ws-card--wide{ grid-column:1 / -1; }
+.ws-card h3{ font-size:17px; font-weight:700; margin-bottom:7px; letter-spacing:-.01em; }
+.ws-card p{ color:var(--muted); font-size:14.5px; }
+
+/* Roadmap */
+.timeline{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:46px; }
+.phase{
+  padding:28px 26px; border:1px solid var(--border); border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+}
+.phase-tag{ display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; padding:6px 12px; border-radius:999px; margin-bottom:20px; }
+.phase-tag--now{ color:#fff; background:linear-gradient(180deg,#5a97f9,#3f7fe8); }
+.phase-tag--next{ color:var(--accent-2); background:rgba(79,142,247,.10); border:1px solid var(--border-hi); }
+.phase-tag--later{ color:var(--muted); background:rgba(255,255,255,.05); border:1px solid var(--border); }
+.phase ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:13px; }
+.phase li{ position:relative; padding-left:22px; color:var(--muted); font-size:15px; font-weight:500; }
+.phase li::before{ content:''; position:absolute; left:0; top:8px; width:7px; height:7px; border-radius:50%; background:var(--accent); }
+.phase-tag--later ~ ul li::before{ background:rgba(255,255,255,.28); }
+
+/* Early access */
+.section--early{ border-top:1px solid var(--divider); }
+.early-card{
+  max-width:560px; margin:0 auto; text-align:center;
+  padding:48px 40px; border:1px solid var(--border-hi); border-radius:var(--radius-lg);
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(79,142,247,.12), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+  box-shadow:0 50px 100px -60px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.early-title{ font-size:clamp(26px,3vw,36px); font-weight:800; letter-spacing:-.03em; }
+.early-sub{ color:var(--muted); margin:14px 0 28px; font-size:16px; }
+.early-form{ display:flex; flex-direction:column; gap:14px; text-align:left; }
+.field label{ display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:7px; }
+.field input{
+  width:100%; height:48px; padding:0 16px; border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.04); border:1px solid var(--border); color:var(--text);
+  font:inherit; font-size:15px; transition:border-color .18s, background .18s;
+}
+.field input:focus{ outline:none; border-color:var(--accent); background:rgba(79,142,247,.06); }
+.field input.invalid{ border-color:#e0664a; }
+.early-note{ font-size:13px; color:var(--dim); text-align:center; margin-top:4px; }
+.early-note.ok{ color:var(--green); }
+
+/* Social */
+.social-inner{ text-align:center; }
+.social-links{ display:flex; justify-content:center; gap:14px; margin-top:30px; flex-wrap:wrap; }
+.social-link{
+  min-width:120px; padding:14px 22px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  font-weight:600; color:var(--text); background:var(--surface); transition:.2s var(--ease);
+}
+.social-link:hover{ border-color:var(--border-hi); background:rgba(79,142,247,.08); transform:translateY(-2px); }
+
+/* Footer */
+.site-footer{ border-top:1px solid var(--divider); padding:64px 0 36px; background:var(--bg-2); }
+.footer-inner{ display:grid; grid-template-columns:1.2fr 2fr; gap:40px; }
+.footer-brand .brand{ font-size:18px; }
+.footer-tag{ color:var(--dim); font-size:13.5px; margin-top:12px; letter-spacing:.02em; }
+.footer-cols{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+.footer-col h4{ font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:var(--dim); margin-bottom:16px; }
+.footer-col a{ display:block; color:var(--muted); font-size:14.5px; padding:6px 0; transition:color .18s; }
+.footer-col a:hover{ color:var(--text); }
+.footer-bottom{ display:flex; align-items:center; justify-content:space-between; margin-top:48px; padding-top:24px; border-top:1px solid var(--divider); color:var(--dim); font-size:13.5px; }
+
+/* ── Reveal on scroll ────────────────────────────────── */
+.reveal{ opacity:0; transform:translateY(20px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+.reveal.is-visible{ opacity:1; transform:none; }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width:1100px){
+  .feature-grid{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:860px){
+  /* LP.MOB.01 — iOS in-app browser sticky-header fix. `position:fixed` headers
+     drift/jump during scroll inside embedded browsers (Telegram, Instagram, X,
+     WhatsApp). `position:sticky` rides the scroll flow and stays stable across
+     Safari, Chrome iOS and in-app browsers. The header is a direct <body> child
+     (no transformed ancestor), so sticky is reliable here. */
+  .site-header{
+    position:sticky;
+    top:0; left:0; right:0;
+    padding-top:env(safe-area-inset-top, 0px);
+    transform:none;          /* never offset/animate the header itself on scroll */
+    will-change:auto;
+  }
+  .nav-center, .header-right .btn{ display:none; }
+  .menu-toggle{ display:flex; }
+  /* Keep the language toggle visible in the mobile header (it already sits
+     just left of the hamburger in DOM order). Reuses the existing toggle +
+     logic; the in-menu .mobile-lang stays in sync via applyLang(). */
+  .header-right{ gap:6px; }
+  .header-right .lang-toggle{ display:flex; gap:2px; margin-right:4px; }
+  .header-right .lang-toggle .lang-btn{ padding:8px 7px; font-size:13.5px; line-height:1; }
+  .header-right .lang-toggle .lang-sep{ font-size:13px; }
+  /* LP.MOB.01 — header is now sticky (in flow, ~76px) instead of fixed, so the
+     hero no longer needs to reserve the full header height in its top padding. */
+  .hero{ padding:48px 0 64px; }
+  .hero-inner{ grid-template-columns:1fr; gap:44px; }
+  .hero-copy{ max-width:none; }
+  .hero-visual{ max-width:460px; margin:0 auto; }
+  .preview-card--hero{ transform:none; }
+  .ws-inner{ grid-template-columns:1fr; gap:36px; }
+  .frag-grid{ grid-template-columns:repeat(3,1fr); }
+  .pain-row{ grid-template-columns:1fr; gap:16px; }
+  .feature-grid{ grid-template-columns:1fr; }
+  .timeline{ grid-template-columns:1fr; }
+  .footer-inner{ grid-template-columns:1fr; gap:32px; }
+  .section{ padding:76px 0; }
+}
+@media (max-width:560px){
+  :root{ --pad:18px; }
+  .frag-grid{ grid-template-columns:repeat(2,1fr); }
+  .ws-cards{ grid-template-columns:1fr; }
+  .footer-cols{ grid-template-columns:1fr 1fr; }
+  .preview-stage{ flex-direction:column; align-items:center; }
+  .preview-card--mobile{ margin:-30px 0 0; }
+  .footer-bottom{ flex-direction:column; gap:16px; align-items:flex-start; }
+  .early-card{ padding:36px 22px; }
+}
+
+/* Large screens — fill more of the canvas at 1600/1900 so 1728/1920 don't feel
+   empty, while 1440 keeps its balanced 1200 container. Hero gets a touch more
+   vertical presence and a slightly larger preview at width. */
+@media (min-width:1600px){
+  :root{ --maxw:1320px; }
+  .hero{ padding:168px 0 104px; }
+  .hero-inner{ gap:64px; }
+  :root{ --h1: clamp(40px, 5.4vw, 92px); }
+}
+@media (min-width:1900px){
+  :root{ --maxw:1380px; }
+}
+
+/* ── AURIX-LANDING-POLISH-1: section rhythm + polished elements ── */
+/* Subtle alternating depth + restrained radial accents — premium, no loud
+   gradients. Breaks the run of identical dark sections for scanability. */
+.section--solution,
+.section--roadmap{
+  background:rgba(255,255,255,0.014);
+  border-top:1px solid var(--divider);
+}
+.section--workspace{
+  background:radial-gradient(58% 50% at 86% 8%, rgba(79,142,247,.07), transparent 62%);
+}
+.section--early{
+  background:radial-gradient(54% 70% at 50% -6%, rgba(79,142,247,.06), transparent 60%);
+}
+
+/* Early-access trust microcopy — small, premium, confidence-building. */
+.early-trust{
+  margin-top:16px; text-align:center;
+  font-size:12.5px; letter-spacing:.015em; color:var(--dim);
+}
+
+/* Social "coming soon" caption */
+.social-soon{
+  margin-top:16px; text-align:center;
+  font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim);
+}
+
+/* Disabled (no-href) labels — social row + footer legal/social. Non-interactive,
+   clearly muted, never read or behave as a live link. */
+.social-link.is-disabled{
+  color:var(--muted); cursor:default; pointer-events:none; opacity:.8;
+}
+.footer-col .is-disabled{
+  display:block; padding:6px 0; color:var(--dim); cursor:default;
+}
+
+/* ════ AURIX-LANDING-PREMIUM-PASS-1 ════════════════════════════════ */
+
+/* Hero product mock — fictional UI, labelled "Product preview". */
+.preview-card.mock{ padding:18px 18px 16px; }
+.mock-total{ margin-bottom:10px; }
+.mock-label{ display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.mock-value-row{ display:flex; align-items:baseline; gap:10px; margin-top:6px; }
+.mock-value{ font-size:30px; font-weight:800; letter-spacing:-.02em; color:#fff; font-variant-numeric:tabular-nums; }
+.mock-delta{ font-size:13px; font-weight:600; color:var(--green); }
+.mock-chart{ height:60px; margin:2px 0 12px; }
+.mock-chart svg{ width:100%; height:100%; }
+.mock-alloc{ display:flex; flex-direction:column; gap:8px; }
+.mock-row{ display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+.mock-row span{ flex:0 0 68px; }
+.mock-bar{ flex:1 1 auto; height:6px; border-radius:999px; background:rgba(255,255,255,.06); overflow:hidden; }
+.mock-bar b{ display:block; height:100%; border-radius:999px; background:var(--accent); }
+.mock-foot{ display:flex; gap:10px; margin-top:14px; }
+.mock-stat{ flex:1; border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 12px; background:rgba(255,255,255,.02); }
+.mock-stat-k{ display:block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); }
+.mock-stat-v{ display:block; margin-top:3px; font-size:14px; font-weight:700; color:var(--text); }
+.mock-stat-v.good{ color:var(--green); }
+
+/* Part 4 — asset-class cards (icon + title + line) */
+@media (min-width:861px){ .frag-grid{ grid-template-columns:repeat(3,1fr); } }
+.frag-card{
+  display:flex; flex-direction:column; align-items:flex-start; gap:7px;
+  padding:22px 20px; border:1px solid var(--border); border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.012));
+  transition:transform .2s var(--ease), border-color .2s var(--ease);
+}
+.frag-card:hover{ transform:translateY(-3px); border-color:var(--border-hi); }
+.frag-ico{ width:26px; height:26px; fill:none; stroke:var(--accent-2); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; opacity:.9; }
+.frag-card h3{ font-size:15.5px; font-weight:700; letter-spacing:-.01em; }
+.frag-card p{ font-size:13px; color:var(--muted); }
+
+/* Part 5 — product cards with mini visuals */
+.feature--viz{ display:flex; flex-direction:column; }
+.fv-figure{ display:flex; align-items:baseline; gap:8px; margin:8px 0 10px; }
+.fv-num{ font-size:26px; font-weight:800; letter-spacing:-.02em; color:#fff; font-variant-numeric:tabular-nums; }
+.fv-delta{ font-size:12.5px; font-weight:600; color:var(--green); }
+.fv-bars{ display:flex; flex-direction:column; gap:6px; margin:10px 0; }
+.fv-bars i{ display:block; height:6px; border-radius:999px; background:rgba(255,255,255,.06); overflow:hidden; }
+.fv-bars b{ display:block; height:100%; border-radius:999px; background:var(--accent); }
+.fv-spark{ height:44px; margin:10px 0; }
+.fv-spark svg{ width:100%; height:100%; }
+.feature--viz p{ margin-top:auto; }
+
+/* Part 6 — Workspace: denser, compact cards + indicator */
+.ws-cards{ grid-template-columns:1fr 1fr; gap:12px; }
+.ws-card{ padding:18px 18px; }
+.ws-card h3{ font-size:16px; margin-bottom:5px; }
+.ws-card p{ font-size:13.5px; }
+.ws-ind{ display:block; height:4px; margin-top:14px; border-radius:999px; background:rgba(255,255,255,.06); overflow:hidden; }
+.ws-ind b{ display:block; height:100%; border-radius:999px; background:var(--accent); }
+
+/* Part 7 — Roadmap compression (~35% less height) */
+.timeline{ gap:14px; margin-top:32px; }
+.phase{ padding:20px 22px; }
+.phase-tag{ margin-bottom:12px; }
+.phase ul{ gap:9px; }
+.phase li{ font-size:14.5px; }
+
+/* Part 11 — mobile visual rhythm: tighten section + hero rhythm, smaller mock */
+@media (max-width:860px){
+  .section{ padding:58px 0; }
+  .ws-cards{ gap:10px; }
+}
+@media (max-width:560px){
+  .frag-grid{ grid-template-columns:1fr 1fr; gap:10px; }
+  .ws-cards{ grid-template-columns:1fr 1fr; gap:9px; }
+  .ws-card{ padding:14px 14px; }
+  .preview-card.mock{ padding:14px; }
+  .mock-value{ font-size:24px; }
+  .mock-chart{ height:48px; }
+  .mock-foot{ gap:8px; }
+  .timeline{ gap:10px; }
+  .phase{ padding:16px 18px; }
+}
+
+/* ════════ AURIX LANDING — PREMIUM PASS FINAL ════════ */
+
+/* 13 — global compression (~20-25% less height) */
+.section{ padding:84px 0; }
+.hero{ padding:128px 0 72px; }
+.section-lead{ margin-top:14px; }
+
+/* 2 — Trust bar */
+.trustbar{ border-top:1px solid var(--divider); border-bottom:1px solid var(--divider); background:rgba(255,255,255,.015); }
+.trustbar-inner{ display:flex; align-items:center; gap:22px; padding:18px 0; flex-wrap:wrap; }
+.trustbar-label{ font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); flex:0 0 auto; }
+.trustbar-list{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:14px 26px; }
+.trustbar-list li{ display:inline-flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--muted); }
+.trustbar-list svg{ width:18px; height:18px; fill:none; stroke:var(--accent-2); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; opacity:.85; }
+
+/* 3 — frag-card soft glow + pain horizontal cards */
+.frag-card{ position:relative; }
+.frag-card:hover{ box-shadow:0 24px 50px -34px rgba(8,12,24,.9), inset 0 0 0 1px rgba(138,178,255,.12); }
+.pain-row{ grid-template-columns:repeat(3,1fr); margin-top:18px; }
+.pain-card{ display:flex; align-items:flex-start; gap:14px; padding:20px; border:1px solid var(--border); border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)); transition:border-color .2s var(--ease), transform .2s var(--ease); }
+.pain-card:hover{ border-color:var(--border-hi); transform:translateY(-3px); }
+.pain-ico{ width:24px; height:24px; flex:0 0 24px; margin-top:2px; fill:none; stroke:var(--accent-2); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; opacity:.85; }
+.pain-card h3{ font-size:16px; font-weight:700; margin-bottom:5px; }
+.pain-card p{ font-size:13.5px; color:var(--muted); }
+
+/* 4 — tabs (filters look, not buttons) */
+.tabs{ display:flex; flex-wrap:wrap; gap:6px; margin:34px 0 28px; padding:5px; border:1px solid var(--border); border-radius:var(--radius-sm); background:rgba(255,255,255,.02); width:fit-content; max-width:100%; }
+.tab{ font-size:13.5px; font-weight:600; color:var(--muted); padding:8px 14px; border-radius:var(--radius-sm); cursor:default; transition:background .18s, color .18s; }
+.tab:hover{ color:var(--text); }
+.tab.is-active{ background:rgba(79,142,247,.16); color:#cfe6ff; }
+
+/* 5 — workspace icons */
+.ws-card{ position:relative; }
+.ws-ico{ width:24px; height:24px; margin-bottom:10px; fill:none; stroke:var(--accent-2); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; opacity:.9; }
+
+/* 6 — Showcase: one dominant desktop mock + iPhone on mobile */
+.section--showcase{ background:radial-gradient(60% 60% at 50% 0%, rgba(79,142,247,.06), transparent 60%); }
+.showcase{ margin-top:40px; display:flex; justify-content:center; }
+.shot{ position:relative; width:100%; max-width:980px; border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.014));
+  box-shadow:0 50px 110px -55px rgba(0,0,0,.92), inset 0 1px 0 rgba(255,255,255,.06); }
+.shot-top{ display:flex; align-items:center; gap:8px; padding:14px 18px; border-bottom:1px solid var(--divider); }
+.shot-nav{ display:flex; gap:18px; margin-left:18px; font-size:12.5px; color:var(--dim); }
+.shot-nav .is-active{ color:var(--text); }
+.shot-body{ display:grid; grid-template-columns:1.7fr 1fr; gap:24px; padding:26px; }
+.shot-main .mock-value{ font-size:34px; }
+.shot-chart{ height:180px; margin-top:14px; }
+.shot-chart svg{ width:100%; height:100%; }
+.shot-side{ display:flex; flex-direction:column; gap:14px; }
+.shot-side-card{ border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; background:rgba(255,255,255,.02); display:flex; flex-direction:column; gap:9px; }
+.shot-stats{ display:flex; gap:12px; }
+.phone{ display:none; }
+
+/* 7 — Roadmap horizontal timeline with connector */
+.timeline{ position:relative; grid-template-columns:repeat(3,1fr); margin-top:38px; }
+.tl-track{ position:absolute; top:9px; left:9%; right:9%; height:2px; opacity:.5;
+  background:linear-gradient(90deg, var(--accent), rgba(125,184,255,.25)); }
+.phase{ position:relative; background:none; border:none; padding:0 14px; }
+.tl-node{ position:absolute; top:3px; left:14px; width:14px; height:14px; border-radius:50%; background:var(--accent); box-shadow:var(--ring); }
+.phase-tag{ margin:26px 0 14px; }
+
+/* 8 — Early access minimal + modal */
+.early-card{ text-align:center; }
+.early-eyebrow{ display:inline-block; font-size:11px; font-weight:700; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--accent-2); padding:6px 12px; border:1px solid var(--border-hi); border-radius:999px; background:rgba(79,142,247,.07); margin-bottom:18px; }
+.early-card .early-title{ margin-bottom:10px; }
+.early-card .early-sub{ margin-left:auto; margin-right:auto; }
+.early-card .btn{ margin-top:18px; }
+.early-trust{ margin-top:18px; }
+.modal{ position:fixed; inset:0; z-index:200; display:none; }
+.modal.open{ display:block; }
+.modal-backdrop{ position:absolute; inset:0; background:rgba(4,6,12,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); animation:fadeIn .2s var(--ease); }
+.modal-card{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(440px,92vw); text-align:left;
+  border:1px solid var(--border-hi); border-radius:var(--radius-lg); padding:34px 30px;
+  background:radial-gradient(120% 100% at 50% 0%, rgba(79,142,247,.12), transparent 60%), linear-gradient(180deg, #0b1120, #070b16);
+  box-shadow:0 50px 120px -40px rgba(0,0,0,.9); animation:popIn .24s var(--ease); }
+.modal-x{ position:absolute; top:12px; right:16px; background:none; border:none; color:var(--muted); font-size:26px; line-height:1; cursor:pointer; }
+.modal-x:hover{ color:var(--text); }
+.modal-title{ font-size:24px; font-weight:800; letter-spacing:-.02em; margin:14px 0 8px; }
+.modal-sub{ color:var(--muted); font-size:14.5px; margin-bottom:20px; }
+body.modal-open{ overflow:hidden; }
+@keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+@keyframes popIn{ from{opacity:0; transform:translate(-50%,-46%) scale(.98)} to{opacity:1; transform:translate(-50%,-50%) scale(1)} }
+
+/* 9/10 — footer compaction + social */
+.site-footer{ padding:44px 0 30px; }
+.footer-social{ display:flex; gap:14px; margin-top:16px; }
+.footer-social a, .footer-social .is-disabled{ font-size:13.5px; color:var(--muted); }
+.footer-social a:hover{ color:var(--text); }
+.footer-social .is-disabled{ color:var(--dim); cursor:default; }
+.footer-bottom{ margin-top:34px; padding-top:20px; }
+
+/* 12 — microanimations: animated bars + drawn lines + soft hero glow */
+.anim-bars b, .ws-ind b{ transform:scaleX(0); transform-origin:left; transition:transform .9s var(--ease); }
+.reveal.is-visible .anim-bars b, .ws-card.is-visible .ws-ind b{ transform:scaleX(1); }
+.draw-line{ stroke-dasharray:1000; stroke-dashoffset:1000; transition:stroke-dashoffset 1.3s var(--ease); }
+.reveal.is-visible .draw-line, .showcase.is-visible .draw-line{ stroke-dashoffset:0; }
+.preview-card--hero{ box-shadow:0 40px 90px -50px rgba(0,0,0,.9), 0 0 60px -30px rgba(79,142,247,.38), inset 0 1px 0 rgba(255,255,255,.06); }
+
+/* responsive */
+@media (max-width:980px){ .shot-body{ grid-template-columns:1fr; } .shot-chart{ height:150px; } }
+@media (max-width:860px){
+  .section{ padding:50px 0; }
+  .hero{ padding:104px 0 50px; }
+  .pain-row{ grid-template-columns:1fr; gap:12px; }
+  .timeline{ grid-template-columns:1fr; gap:18px; }
+  .tl-track{ display:none; }
+  .phase{ padding:0 0 0 22px; border-left:2px solid rgba(79,142,247,.3); }
+  .tl-node{ left:-8px; top:2px; }
+  .phase-tag{ margin:0 0 12px; }
+  .shot--desktop{ display:none; }
+  .phone{ display:flex; justify-content:center; }
+  .phone-screen{ width:300px; border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px 18px 26px; position:relative;
+    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.014));
+    box-shadow:0 40px 90px -45px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.06); }
+}
+@media (max-width:560px){
+  .trustbar-inner{ gap:12px; }
+  .trustbar-list{ gap:9px 16px; }
+  .tabs{ width:100%; overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+}
+
+/* ════════ AURIX LANDING — PREMIUM PASS ULTIMATE V2 ════════ */
+
+/* B13 — tighter global rhythm */
+.section{ padding:72px 0; }
+.hero{ padding:120px 0 64px; }
+
+/* B2 — asset cards read as institutional categories */
+.frag-card{ padding:28px 24px; border-radius:var(--radius); }
+.frag-card:hover{ transform:translateY(-2px); box-shadow:0 22px 48px -34px rgba(8,12,24,.92), inset 0 0 0 1px rgba(138,178,255,.14); }
+.frag-ico{ width:24px; height:24px; }
+
+/* B3 — problems become a quiet, secondary "consequences" band */
+.pain-row{ grid-template-columns:repeat(3,1fr); gap:14px; margin-top:34px; padding-top:30px; border-top:1px solid var(--divider); }
+.pain-card{ padding:14px 16px; gap:12px; background:rgba(255,255,255,.018); border-color:rgba(255,255,255,.05); }
+.pain-card:hover{ transform:none; border-color:var(--border); }
+.pain-ico{ width:20px; height:20px; flex:0 0 20px; opacity:.55; stroke:var(--muted); }
+.pain-card h3{ font-size:14px; font-weight:600; color:var(--muted); margin-bottom:3px; }
+.pain-card p{ font-size:12.5px; color:var(--dim); }
+
+/* B4 — asset classes as a calm descriptive line (not tabs) */
+.asset-line{ text-align:center; color:var(--dim); font-size:14.5px; letter-spacing:.03em; margin:30px auto 36px; max-width:720px; }
+
+/* B5 — metrics hierarchy: Total value protagonist, then 2-up */
+.metrics{ display:flex; flex-direction:column; gap:16px; }
+.feature--value{ padding:30px 30px; }
+.feature--value .fv-figure{ margin:10px 0 12px; }
+.feature--value .fv-num{ font-size:clamp(34px,4.6vw,46px); }
+.feature--value .fv-delta{ font-size:14px; }
+.metrics-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* B7 — heavier Workspace headline so the narrative leads the cards */
+.ws-copy .section-title{ font-size:clamp(30px,4vw,52px); }
+.ws-copy .eyebrow{ margin-bottom:18px; }
+
+/* B9 — mockup gets more presence */
+.shot{ max-width:1080px; }
+.showcase{ margin-top:30px; }
+
+/* B10 — roadmap tightened */
+.timeline{ margin-top:28px; }
+.phase ul{ gap:8px; }
+.phase li{ font-size:14px; }
+.phase-tag{ margin:22px 0 12px; }
+
+@media (max-width:860px){
+  .section{ padding:44px 0; }
+  /* LP.MOB.02 — the mobile header is sticky (in flow, ~76px), so the hero doesn't need to reserve header
+     height on top. This last-winning ≤860 rule had re-inflated the top to 100px → dead space above the
+     "WEALTH OPERATING SYSTEM" eyebrow. Back to the intended tight top (48px); bottom + all internal hero
+     spacing (gap, copy, CTA) unchanged, so the whole block simply shifts up as one unit. */
+  .hero{ padding:48px 0 44px; }
+  .metrics-row{ grid-template-columns:1fr 1fr; }
+  .pain-row{ grid-template-columns:1fr; gap:10px; padding-top:24px; margin-top:26px; }
+  .feature--value{ padding:24px 22px; }
+}
+@media (max-width:560px){
+  .metrics-row{ grid-template-columns:1fr; }
+  .asset-line{ margin:24px auto 28px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto; }
+  .reveal{ opacity:1; transform:none; transition:none; }
+  *{ animation:none !important; }
+  .btn:hover, .feature:hover, .ws-card:hover, .frag-card:hover, .pain-card:hover{ transform:none; }
+  .anim-bars b, .ws-ind b{ transform:none; transition:none; }
+  .draw-line{ stroke-dashoffset:0; transition:none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   AURIX-WEBSITE-MESSAGING-AND-COMMUNITY-1
+   Additive only — all-new classes, no overrides of existing selectors.
+   Reuses the existing token system (--accent-2, --surface, --border…).
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Block 1 · Strategic positioning ───────────────────── */
+.section--positioning{ border-top:1px solid var(--divider); }
+.positioning-inner{ max-width:960px; margin:0 auto; text-align:center; }
+.positioning-title{
+  font-size:clamp(30px,4.4vw,58px); font-weight:800; letter-spacing:-.03em;
+  line-height:1.12; margin-top:20px; color:var(--text);
+}
+/* AURIX-WEBSITE-HERO-COPY-RHYTHM-1: three logical lines (Centralize / Understand
+   / Discover). Same font, size, weight, colour and line-height as before — only
+   the line breaks change. A restrained gap groups the three steps; text-wrap
+   balance keeps the long third line wrapping evenly (premium) on narrow widths. */
+.positioning-title span{ display:block; text-wrap:balance; }
+.positioning-title span + span{ margin-top:.3em; }
+.positioning-lead{
+  font-size:var(--lead); color:var(--muted); line-height:1.6;
+  max-width:62ch; margin:28px auto 0;
+}
+.positioning-lead--dim{ color:var(--dim); margin-top:16px; }
+
+/* ── Block 2 · Community ────────────────────────────────── */
+.section--community{ border-top:1px solid var(--divider); }
+.community-inner{ text-align:center; }
+.community-inner .section-title{ max-width:none; margin:0 auto; }
+.community-inner .section-lead{ margin-left:auto; margin-right:auto; }
+.community-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
+  margin:40px auto 0; max-width:920px;
+}
+.community-card{
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:26px 18px; border-radius:var(--radius-sm);
+  background:var(--surface); border:1px solid var(--border);
+  transition:transform .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
+}
+.community-card:hover{
+  transform:translateY(-4px);
+  border-color:var(--border-hi);
+  background:rgba(79,142,247,.07);
+}
+.community-ico{
+  width:26px; height:26px; margin-bottom:6px;
+  fill:none; stroke:var(--accent-2); stroke-width:1.6;
+  stroke-linecap:round; stroke-linejoin:round; opacity:.9;
+  transition:stroke .2s var(--ease), opacity .2s var(--ease);
+}
+.community-card:hover .community-ico{ stroke:var(--accent-3); opacity:1; }
+.community-name{ font-size:15px; font-weight:700; color:var(--text); letter-spacing:-.01em; }
+.community-handle{ font-size:13px; color:var(--dim); }
+.community-card--secondary{ opacity:.82; }
+.community-card--secondary:hover{ opacity:1; }
+
+/* ── Block 3 · Footer description + social column ──────── */
+.footer-desc{ color:var(--muted); font-size:14px; line-height:1.65; margin-top:14px; max-width:42ch; }
+.footer-col--social a{ display:flex; align-items:baseline; gap:8px; }
+.footer-handle{ color:var(--dim); font-size:13px; }
+
+/* ── Block 4 · Credibility strip ───────────────────────── */
+.credibility{ border-top:1px solid var(--divider); padding:64px 0; }
+.credibility-inner{ text-align:center; }
+.credibility-line{
+  font-size:clamp(20px,2.6vw,30px); font-weight:600; letter-spacing:-.02em;
+  line-height:1.35; color:var(--text); margin:0;
+}
+.credibility-line span{ display:block; }
+.credibility-line span + span{ color:var(--muted); }
+.credibility-line span:last-child{ color:var(--accent-2); }
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width:860px){
+  .community-grid{ grid-template-columns:repeat(2,1fr); gap:12px; }
+  .credibility{ padding:48px 0; }
+}
+@media (max-width:560px){
+  .community-card{ padding:20px 12px; }
+  .positioning-lead{ margin-top:22px; }
+}
+@media (prefers-reduced-motion: reduce){
+  .community-card:hover{ transform:none; }
+}
+
+/* ════ AURIX-LANDING-LEAN-1 ═══════════════════════════════════════════
+   Platform Tools strip (was "Latest updates"). Compact premium chips. */
+
+/* ── Platform tools ────────────────────────────────────── */
+.section--updates{ border-top:1px solid var(--divider); padding:64px 0; }
+.updates-inner{ text-align:center; }
+.updates-inner .section-title{ max-width:none; margin:0 auto; }
+.updates-inner .section-lead{ margin-left:auto; margin-right:auto; }
+/* Professional modules — real product capabilities, not tags. Defined module
+   cards with an accent dot, stronger border and a premium hover lift. */
+.updates-grid{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+  margin:38px auto 0; max-width:940px;
+}
+.update-chip{
+  display:flex; align-items:center; gap:12px; text-align:left;
+  font-size:15px; font-weight:600; color:var(--text);
+  padding:16px 18px; border-radius:var(--radius-sm);
+  border:1px solid var(--border-hi);
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.014));
+  transition:transform .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease), box-shadow var(--t) var(--ease);
+}
+.update-chip::before{
+  content:''; flex:0 0 auto; width:8px; height:8px; border-radius:50%;
+  background:var(--accent); box-shadow:var(--ring);
+}
+.update-chip:hover{
+  transform:translateY(-3px); border-color:var(--accent);
+  background:rgba(79,142,247,.08);
+  box-shadow:0 24px 50px -34px rgba(8,12,24,.9);
+}
+
+@media (max-width:860px){ .updates-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px){
+  .section--updates{ padding:48px 0; }
+  .updates-grid{ grid-template-columns:1fr; gap:10px; margin-top:26px; }
+  .update-chip{ padding:14px 16px; font-size:14px; }
+}
+
+/* ── Market ─────────────────────────────────────────────
+   Centered intro (reuses .updates-inner) + a premium preview panel: six tabs
+   over an animated chart. Eyebrow sits centered above the title. */
+.section--market{ border-top:1px solid var(--divider); padding:64px 0; }
+.section--market .eyebrow{ display:inline-block; margin-bottom:14px; }
+@media (max-width:560px){ .section--market{ padding:48px 0; } }
+
+.market-panel{
+  position:relative; max-width:880px; margin:40px auto 0; text-align:left;
+  border:1px solid var(--border-hi); border-radius:var(--radius); overflow:hidden;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.014));
+  box-shadow:0 40px 90px -50px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
+  padding:20px 22px 8px;
+}
+.market-panel::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(70% 50% at 75% 0%, rgba(79,142,247,.10), transparent 60%);
+}
+.market-tabs{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 18px; position:relative; z-index:1; }
+.mk-tab{
+  font:inherit; font-size:13.5px; font-weight:600; color:var(--muted); cursor:pointer;
+  padding:8px 14px; border-radius:999px; border:1px solid var(--border);
+  background:rgba(255,255,255,.02);
+  transition:color .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
+}
+.mk-tab:hover{ color:var(--text); border-color:var(--border-hi); }
+.mk-tab.is-active{ color:#fff; border-color:var(--accent); background:rgba(79,142,247,.16); }
+.market-quote{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; position:relative; z-index:1; }
+.mk-quote-main{ display:flex; align-items:center; gap:9px; }
+.mk-live{ position:relative; width:8px; height:8px; flex:0 0 auto; }
+.mk-live i{ position:absolute; inset:0; border-radius:50%; background:#27c768; animation:mkPulse 2.2s var(--ease) infinite; }
+@keyframes mkPulse{ 0%{ box-shadow:0 0 0 0 rgba(39,199,104,.45) } 70%{ box-shadow:0 0 0 7px rgba(39,199,104,0) } 100%{ box-shadow:0 0 0 0 rgba(39,199,104,0) } }
+.mk-symbol{ font-size:15px; font-weight:700; letter-spacing:-.01em; color:var(--text); }
+.mk-quote-fig{ display:flex; align-items:baseline; gap:10px; }
+.mk-price{ font-size:clamp(26px,3.4vw,34px); font-weight:800; letter-spacing:-.02em; color:#fff; font-variant-numeric:tabular-nums; }
+.mk-delta{ font-size:14px; font-weight:700; color:var(--muted); }
+.mk-delta.up{ color:#27c768; }
+.mk-delta.down{ color:#f4776a; }
+.market-chart{ margin:14px -22px 0; height:200px; position:relative; z-index:1; }
+.market-chart svg{ width:100%; height:100%; display:block; }
+@media (max-width:560px){
+  .market-panel{ padding:16px 16px 6px; }
+  /* Take the preview chip out of the absolute layer so it never overlaps the
+     category pills — it sits as its own right-aligned row above the tabs. */
+  .market-panel .preview-chip{
+    position:static; display:block; width:fit-content;
+    margin:0 0 12px auto;
+  }
+  .market-chart{ margin:12px -16px 0; height:150px; }
+  .mk-tab{ font-size:12.5px; padding:7px 11px; }
+}
+@media (prefers-reduced-motion: reduce){ .mk-live i{ animation:none; } }
+
+/* ── Intelligence: benefits + premium orb ───────────────── */
+.intel-benefits{ list-style:none; margin:26px 0 0; padding:0; display:grid; gap:14px; }
+.intel-benefits li{ display:flex; align-items:flex-start; gap:12px; font-size:16px; font-weight:500; color:var(--text); }
+.intel-benefits svg{
+  flex:0 0 auto; box-sizing:border-box; width:24px; height:24px; margin-top:1px; padding:3px;
+  border-radius:50%; background:rgba(79,142,247,.12);
+  fill:none; stroke:var(--accent); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round;
+}
+.ws-visual{ display:flex; align-items:center; justify-content:center; }
+/* ───── WSPHERE.V3 — signature Intelligence orb (web + mobile, one language) ─────
+   Anchored sphere (no float) + subtle breath, electric-blue core, traveling ECG
+   tracer, quieter rings, desktop cursor sheen. transform/opacity only. */
+.intel-orb{ position:relative; width:min(360px,78vw); aspect-ratio:1/1; }
+/* Electric falloff glow — breathes in lockstep with the core (opacity+scale only). */
+.io-glow{
+  position:absolute; inset:0; border-radius:50%; filter:blur(6px);
+  background:radial-gradient(circle at 50% 44%, rgba(95,160,255,.6), rgba(77,141,255,.18) 46%, transparent 72%);
+  animation:ioGlow 4s ease-in-out infinite; will-change:transform,opacity;
+}
+/* (#6) Orbital rings — quieter (~30% less movement), clearly secondary. */
+.io-ring{ position:absolute; inset:8%; border-radius:50%; border:1px solid rgba(120,170,255,.16); }
+.io-ring--1{ animation:ioPulse 5s var(--ease) infinite; will-change:transform,opacity; }
+.io-ring--2{ inset:0; border-color:rgba(120,170,255,.10); animation:ioPulse 5s var(--ease) 1s infinite; will-change:transform,opacity; }
+/* (#3) Electric Aurix core: bright electric-blue center → deep sapphire → dark rim.
+   (#1/#2) Anchored — micro breath only (scale 1→1.03), no translate. */
+.io-core{
+  position:absolute; inset:24%; border-radius:50%;
+  background:radial-gradient(circle at 50% 40%, #eaf4ff 0%, #bcdcff 12%, #5aa0ff 36%, #2f6ae0 60%, #16408c 80%, #0a2a66 100%);
+  box-shadow:
+    inset 0 6px 20px rgba(255,255,255,.34),
+    inset 0 -20px 38px rgba(6,16,46,.82),
+    inset 0 0 36px rgba(60,120,230,.30),
+    0 24px 60px -18px rgba(77,141,255,.7);
+  animation:ioBreathe 4s ease-in-out infinite; will-change:transform;
+}
+/* Subtle centered top highlight (depth, not glass). */
+.io-core::before{
+  content:''; position:absolute; left:50%; top:9%; transform:translateX(-50%);
+  width:54%; height:30%; border-radius:50%; pointer-events:none; filter:blur(5px);
+  background:radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.5), rgba(255,255,255,0) 72%);
+}
+/* Darker outer rim — smooth layer transition / volume. */
+.io-core::after{
+  content:''; position:absolute; inset:0; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle at 50% 50%, transparent 55%, rgba(6,16,46,.5) 100%);
+}
+/* (#4) Cursor sheen — soft highlight following the pointer over the sphere.
+   Desktop only (enabled via JS on fine pointers); fades when idle; transform-moved. */
+.io-sheen{
+  position:absolute; inset:24%; border-radius:50%; overflow:hidden;
+  pointer-events:none; opacity:0; transition:opacity .45s ease; z-index:1;
+}
+.io-sheen::before{
+  content:''; position:absolute; top:0; left:0; width:62%; height:62%; border-radius:50%;
+  background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.22), rgba(255,255,255,0) 70%);
+  transform:translate(var(--io-sx,-50%), var(--io-sy,-50%)); will-change:transform;
+}
+.intel-orb.is-sheen .io-sheen{ opacity:1; }
+/* (#5) ECG — full line visible (dim base) + a bright tracer travelling L→R,
+   illuminating peaks as it passes, then pausing. pathLength=100 normalizes the dash. */
+.io-ecg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; mix-blend-mode:screen; }
+.io-ecg-base{ stroke:rgba(130,200,255,.28); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.io-ecg-trace{
+  stroke:#cdeeff; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round;
+  filter:drop-shadow(0 0 3px rgba(150,210,255,.85));
+  stroke-dasharray:14 100; stroke-dashoffset:14;
+  animation:ecgTrace 3s ease-in-out infinite; will-change:stroke-dashoffset,opacity;
+}
+@keyframes ioBreathe{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.03) } }
+@keyframes ioGlow{ 0%,100%{ transform:scale(1); opacity:.9 } 50%{ transform:scale(1.04); opacity:1 } }
+@keyframes ioPulse{ 0%{ transform:scale(.99); opacity:.55 } 50%{ transform:scale(1.008); opacity:.8 } 100%{ transform:scale(.99); opacity:.55 } }
+@keyframes ecgTrace{
+  0%   { stroke-dashoffset:14;   opacity:0 }   /* hidden, entering at left */
+  8%   { opacity:1 }
+  60%  { stroke-dashoffset:-114; opacity:1 }   /* travelled across, exits right */
+  70%  { stroke-dashoffset:-114; opacity:0 }
+  100% { stroke-dashoffset:-114; opacity:0 }   /* pause before repeat */
+}
+@media (max-width:860px){
+  /* Read-first order: copy + benefits come first, the orb closes the section. */
+  .ws-visual{ order:0; margin-top:4px; }
+  /* (#7) Smaller on mobile (−13% vs V2) — better section balance. Desktop unchanged. */
+  .intel-orb{ width:min(208px,46vw); }
+  /* Cursor sheen is desktop-only. */
+  .io-sheen{ display:none; }
+}
+@media (max-width:560px){
+  /* (#7) One step smaller again on phones (−14%). */
+  .intel-orb{ width:min(172px,48vw); }
+}
+@media (prefers-reduced-motion: reduce){
+  .io-core, .io-ring--1, .io-ring--2, .io-glow{ animation:none; }
+  /* Show the full signal, no travelling tracer. */
+  .io-ecg-trace{ animation:none; stroke-dasharray:none; stroke-dashoffset:0; opacity:1; }
+}
+
+/* ── Fragmentation consequences — one elegant conclusion line ─────────── */
+/* No divider: the asset list and this conclusion read as one continuous
+   problem block, not two separate sections. */
+.section--problem .frag-grid{ margin-bottom:24px; }
+.pain-line{
+  margin:0; padding-top:4px;
+  text-align:center; color:var(--dim); font-size:15px; font-weight:500; letter-spacing:.01em;
+}
+.pain-line span{ white-space:nowrap; }
+.pain-line span + span::before{ content:'•'; margin:0 14px; color:var(--accent-2); opacity:.55; }
+@media (max-width:560px){
+  .pain-line{ font-size:13.5px; padding-top:2px; }
+  .pain-line span + span::before{ margin:0 9px; }
+}
+
+/* ════ AURIX-LANDING-POLISH-2 ═════════════════════════════════════════
+   Structure polish: premium asset chips, stacked Intelligence layout,
+   unified Private Beta + Founder Access card. Additive overrides. */
+
+/* ── Premium asset chips (merged unified-view section) ──── */
+.section--solution .asset-grid{ margin:26px 0 36px; }
+.section--solution .asset{
+  transition:border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+}
+.section--solution .asset:hover{ border-color:var(--border-hi); background:rgba(79,142,247,.07); transform:translateY(-2px); }
+
+/* ── Intelligence section: stacked + centred header, balanced grid ── */
+.ws-stacked{ display:block; }
+.ws-head{ max-width:760px; margin:0 auto 38px; text-align:center; }
+.ws-head .eyebrow{ margin-bottom:16px; }
+.ws-head .section-title{ margin-top:0; }
+.ws-head .section-lead{ margin-left:auto; margin-right:auto; }
+/* 6 cards → clean 3×2 grid, no orphan card. */
+.ws-stacked .ws-cards{ grid-template-columns:repeat(3,1fr); gap:16px; }
+@media (max-width:860px){
+  .ws-stacked .ws-cards{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:560px){
+  .ws-head{ margin-bottom:26px; }
+  .ws-stacked .ws-cards{ grid-template-columns:repeat(2,1fr); gap:9px; }
+}
+
+/* ── Unified Private Beta + Founder Access card ─────────── */
+.early-card .early-sub{ margin-bottom:14px; }
+.early-founder{
+  max-width:46ch; margin:0 auto;
+  color:var(--dim); font-size:14px; line-height:1.6;
+  padding-top:14px; border-top:1px solid var(--divider);
+}
+
+/* ════ AURIX-LANDING-ANIM-1 — staggered reveals ═══════════════════════════════
+   Subtle, once-per-section stagger layered on the existing .reveal system. The
+   parent .reveal hides children (opacity:0) until is-visible, so there is no
+   flash and no no-JS hidden state. Tool chips use an opacity-only keyframe so
+   their hover lift (transform) never clashes with the entrance. */
+@keyframes auxFade { from { opacity:0 } to { opacity:1 } }
+@keyframes auxRise { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+
+/* Professional Tools — chips fade-stagger (hover lift preserved) */
+.updates-grid.is-visible .update-chip{ animation:auxFade .5s var(--ease) both; }
+.updates-grid.is-visible .update-chip:nth-child(2){ animation-delay:.05s }
+.updates-grid.is-visible .update-chip:nth-child(3){ animation-delay:.10s }
+.updates-grid.is-visible .update-chip:nth-child(4){ animation-delay:.15s }
+.updates-grid.is-visible .update-chip:nth-child(5){ animation-delay:.20s }
+.updates-grid.is-visible .update-chip:nth-child(6){ animation-delay:.25s }
+.updates-grid.is-visible .update-chip:nth-child(7){ animation-delay:.30s }
+.updates-grid.is-visible .update-chip:nth-child(8){ animation-delay:.35s }
+.updates-grid.is-visible .update-chip:nth-child(9){ animation-delay:.40s }
+/* subtle premium hover shine on the accent dot */
+.update-chip:hover::before{ box-shadow:0 0 0 5px rgba(79,142,247,.18); }
+
+/* Roadmap — phase columns rise-stagger (child 1 = .tl-track) */
+.timeline.is-visible .phase{ animation:auxRise .55s var(--ease) both; }
+.timeline.is-visible .phase:nth-child(3){ animation-delay:.09s }
+.timeline.is-visible .phase:nth-child(4){ animation-delay:.18s }
+
+@media (prefers-reduced-motion: reduce){
+  .updates-grid.is-visible .update-chip,
+  .timeline.is-visible .phase{ animation:none; opacity:1; transform:none; }
+}
+
+/* ════════ LP.F9 — Fragmentation map + Sphere premium final ════════════════════
+   Visual/animation only. Additive overrides (later source order wins). No layout,
+   navigation, typography, responsive or external-spacing changes. */
+
+/* ── 1. Fragmentation — icon + title only, compact 3×2 map ───────────────────
+   Descriptions removed in markup; cards become tighter tiles so the conclusion
+   line ("No visibility • No clarity • No context") carries the message. */
+.frag-grid{ gap:18px; }
+.frag-card{ padding:20px 20px; gap:10px; justify-content:center; }
+.frag-card h3{ margin:0; }
+@media (max-width:560px){
+  .frag-grid{ gap:12px; }
+  .frag-card{ padding:16px 16px; gap:8px; }
+}
+
+/* ── 2-5. Intelligence sphere ─────────────────────────────────────────────────
+   Central sphere is fully anchored (no translate, no breathing). Only the outer
+   halo breathes and the orbital rings rotate slowly. */
+
+/* Outer halo — minimal breath only (allowed external motion). */
+.io-glow{ animation:ioGlow 5s ease-in-out infinite; }
+
+/* (#2) Orbital rings — slow rotation of tilted orbits (opposite directions,
+   different speeds). Elliptical so the rotation reads as orbital, never a
+   spinning disc; very slow so it stays premium, never "gaming". */
+.io-ring{ inset:6%; border-color:rgba(120,170,255,.16); }
+.io-ring--1{ animation:lpf9Orbit1 48s linear infinite; }
+.io-ring--2{ inset:6%; border-color:rgba(120,170,255,.10); animation:lpf9Orbit2 66s linear infinite; }
+@keyframes lpf9Orbit1{ from{ transform:rotate(0deg) scaleY(.74) } to{ transform:rotate(360deg) scaleY(.74) } }
+@keyframes lpf9Orbit2{ from{ transform:rotate(360deg) scaleY(.64) } to{ transform:rotate(0deg) scaleY(.64) } }
+
+/* (#1) Central core — COMPLETELY FIXED: no breathing, no vertical movement. */
+.io-core{
+  animation:none;
+  /* (#4) More electric AURIX central gradient; brightness not raised globally. */
+  background:radial-gradient(circle at 50% 40%, #eef6ff 0%, #c6e1ff 11%, #5ea6ff 34%, #2f6ae0 58%, #163d8c 80%, #08245c 100%);
+  box-shadow:
+    inset 0 6px 20px rgba(255,255,255,.30),
+    inset 0 -22px 40px rgba(5,14,42,.86),
+    inset 0 0 30px rgba(70,130,240,.26),       /* (#4) soft inner halo */
+    0 24px 60px -18px rgba(77,141,255,.66);
+}
+/* (#4) Top-LEFT glass reflection (crystal), replacing the centered highlight. */
+.io-core::before{
+  left:34%; top:12%; transform:translateX(-50%) rotate(-14deg);
+  width:48%; height:27%; filter:blur(5px);
+  background:radial-gradient(ellipse at 44% 40%, rgba(255,255,255,.55), rgba(255,255,255,0) 70%);
+}
+/* (#4) Darker outer rim — slightly deeper for volume. */
+.io-core::after{
+  background:radial-gradient(circle at 50% 50%, transparent 52%, rgba(4,12,38,.62) 100%);
+}
+
+/* (#3) ECG — single trace, full redraw each cycle. Invisible → draw L→R → hold →
+   soft fade → clean reset. No partial/cut/static line between cycles. */
+.io-ecg-base{ display:none; }
+.io-ecg-trace{
+  stroke-dasharray:100; stroke-dashoffset:100;
+  animation:lpf9Ecg 4.6s var(--ease) infinite;
+}
+@keyframes lpf9Ecg{
+  0%   { stroke-dashoffset:100; opacity:0 }   /* invisible */
+  4%   { opacity:1 }                           /* appears at the left edge */
+  46%  { stroke-dashoffset:0;   opacity:1 }    /* fully drawn left→right */
+  72%  { stroke-dashoffset:0;   opacity:1 }    /* held visible */
+  86%  { stroke-dashoffset:0;   opacity:0 }    /* soft fade out */
+  87%  { stroke-dashoffset:100; opacity:0 }    /* clean reset while invisible */
+  100% { stroke-dashoffset:100; opacity:0 }    /* pause before redraw */
+}
+
+/* (#5) Hover — premium crystal micro-flash that follows the cursor (desktop).
+   Bluish-white, very low intensity, quick 250ms fade. Not neon, not gaming. */
+.io-sheen{ transition:opacity .25s ease; }
+.io-sheen::before{
+  background:radial-gradient(circle at 50% 50%, rgba(206,228,255,.20), rgba(206,228,255,0) 70%);
+}
+.intel-orb.is-sheen .io-sheen{ opacity:.9; }
+
+@media (prefers-reduced-motion: reduce){
+  /* Static, fully-drawn signal; rings/halo/core already still. */
+  .io-ring--1, .io-ring--2{ animation:none; transform:scaleY(.74) }
+  .io-ecg-trace{ animation:none; stroke-dasharray:none; stroke-dashoffset:0; opacity:1; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPEC 2 · LANDING DE CONVERSIÓN — hero con CTA en todas las anchuras, capturas
+   reales (datos ficticios) etiquetadas, cómo funciona, beneficios, planes, FAQ.
+   Sólo tokens existentes; sin animaciones nuevas (respeta reduced-motion).
+   ══════════════════════════════════════════════════════════════════════════ */
+.hero-cta{ display:flex; flex-wrap:wrap; gap:12px; margin-top:26px; }
+.hero-copy > .hero-cta-note{ display:block; margin-top:12px; font-size:13px; color:var(--muted); opacity:1; }
+.shot{ margin:0; position:relative; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border-hi);
+  background:#0a0f1a; box-shadow:0 24px 60px rgba(0,0,0,.45); }
+.shot img{ display:block; width:100%; height:auto; }
+.shot-tag{ position:absolute; left:12px; bottom:12px; padding:5px 10px; border-radius:var(--radius-pill);
+  font-size:12px; font-weight:600; letter-spacing:.01em; color:#eaf2ff; background:rgba(5,9,18,.86);
+  border:1px solid var(--border-hi); }
+.hero-visual.shot{ align-self:center; }
+
+.section--how .section-title{ max-width:none; margin-top:10px; }
+.how-row{ display:grid; grid-template-columns:.9fr 1.1fr; gap:48px; align-items:center; margin-top:56px; }
+.how-row--rev .how-copy{ order:2; }
+.how-copy h3{ font-size:24px; font-weight:750; letter-spacing:-.02em; margin:10px 0 10px; }
+.how-copy p{ color:var(--muted); font-size:16px; line-height:1.6; }
+.how-step{ display:inline-grid; place-items:center; width:30px; height:30px; border-radius:50%;
+  font-weight:800; font-size:14px; color:#fff; background:var(--accent); }
+.how-list{ margin:14px 0 0; padding:0; list-style:none; display:grid; gap:8px; }
+.how-list li{ position:relative; padding-left:22px; color:var(--text); font-size:15px; }
+.how-list li::before{ content:''; position:absolute; left:4px; top:.55em; width:7px; height:7px; border-radius:50%; background:var(--accent-2); }
+
+.benefit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.benefit{ padding:26px 24px; border-radius:var(--radius); background:var(--surface-2); border:1px solid var(--border); }
+.benefit h3{ font-size:18px; font-weight:750; letter-spacing:-.01em; margin:0 0 8px; }
+.benefit p{ color:var(--muted); font-size:15px; line-height:1.55; margin:0; }
+
+.section--plans .section-title{ max-width:none; margin-top:10px; }
+.plan-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:36px; align-items:stretch; }
+.plan{ display:flex; flex-direction:column; gap:14px; padding:28px; border-radius:var(--radius-lg);
+  background:var(--surface-2); border:1px solid var(--border); }
+.plan--premium{ border-color:rgba(79,142,247,.55); background:linear-gradient(180deg, rgba(79,142,247,.14), rgba(79,142,247,.04)); }
+.plan-name{ font-size:20px; font-weight:800; margin:0; }
+.plan-prices{ display:grid; gap:4px; }
+.plan-price{ margin:0; color:var(--muted); font-size:15px; }
+.plan-price b{ color:var(--text); font-size:30px; font-weight:800; letter-spacing:-.02em; margin-right:4px; }
+.plan-note{ margin:0; font-size:14px; color:var(--accent-3); }
+.plan-list{ margin:4px 0 6px; padding:0; list-style:none; display:grid; gap:10px; flex:1; }
+.plan-list li{ position:relative; padding-left:24px; font-size:15px; color:var(--text); }
+.plan-list li::before{ content:'✓'; position:absolute; left:0; top:0; color:var(--accent-2); font-weight:800; }
+.plan-terms{ margin:0; font-size:13px; line-height:1.5; color:var(--muted); }
+.btn-block{ width:100%; justify-content:center; }
+
+.faq-inner{ max-width:820px; }
+.faq{ border-top:1px solid var(--border); }
+.faq:last-of-type{ border-bottom:1px solid var(--border); }
+.faq summary{ cursor:pointer; list-style:none; padding:18px 36px 18px 0; position:relative; font-size:17px; font-weight:650; }
+.faq summary::-webkit-details-marker{ display:none; }
+.faq summary::after{ content:'+'; position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:22px; color:var(--accent-2); }
+.faq[open] summary::after{ content:'–'; }
+.faq summary:focus-visible{ outline:2px solid var(--accent-2); outline-offset:4px; border-radius:6px; }
+.faq p{ margin:0 0 18px; color:var(--muted); font-size:15.5px; line-height:1.6; }
+
+.final-inner{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:16px; }
+.final-inner .section-title{ max-width:22ch; }
+.final-inner .hero-cta-note{ color:var(--muted); opacity:1; }
+
+@media (max-width:860px){
+  .hero-cta{ flex-direction:column; align-items:stretch; }
+  .hero-cta .btn{ width:100%; justify-content:center; }
+  .hero-cta-mobile{ display:none !important; }
+  .how-row, .how-row--rev{ grid-template-columns:1fr; gap:22px; margin-top:44px; }
+  .how-row--rev .how-copy{ order:0; }
+  .benefit-grid, .plan-grid{ grid-template-columns:1fr; }
+  .plan{ padding:22px; }
+}
+@media (max-width:360px){
+  .plan-price b{ font-size:26px; }
+  .shot-tag{ font-size:11px; left:8px; bottom:8px; }
+}
+/* 320 px: la tarjeta de plan no puede crecer por su contenido (botón largo sin salto). */
+.plan-grid > .plan{ min-width:0; }
+.plan .btn{ white-space:normal; height:auto; min-height:48px; padding:12px 18px; text-align:center; line-height:1.3; }
+/* SPEC 2 · foco visible por teclado en TODOS los enlaces y botones de la landing. */
+a:focus-visible, .btn:focus-visible, button:focus-visible, .lang-btn:focus-visible{ outline:2px solid var(--accent-2); outline-offset:3px; border-radius:8px; }

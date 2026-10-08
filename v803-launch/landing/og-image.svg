@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Aurix — Operating System for Wealth">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070b16"/>
+      <stop offset="100%" stop-color="#04060c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="28%" cy="22%" r="60%">
+      <stop offset="0" stop-color="rgba(79,142,247,.34)"/>
+      <stop offset="100%" stop-color="rgba(79,142,247,0)"/>
+    </radialGradient>
+    <linearGradient id="wm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#cfe6ff"/>
+      <stop offset="50%" stop-color="#7db8ff"/>
+      <stop offset="100%" stop-color="#3f8cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <text x="90" y="300" font-family="Inter, system-ui, sans-serif" font-size="132" font-weight="900" letter-spacing="22" fill="url(#wm)">AURIX</text>
+  <text x="96" y="372" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="500" fill="rgba(226,234,250,.72)">Operating System for Wealth</text>
+  <text x="96" y="436" font-family="Inter, system-ui, sans-serif" font-size="25" font-weight="400" fill="rgba(226,234,250,.5)">Stocks · Funds · Crypto · Metals · Real Estate · Cash — one platform.</text>
+  <rect x="90" y="470" width="150" height="5" rx="2.5" fill="#4f8ef7"/>
+</svg>

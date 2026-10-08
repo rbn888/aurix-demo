@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es" data-lang="es">
+<head>
+  <script src="demo/aurix-demo-runtime.js"></script>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; form-action 'self'; manifest-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>Aurix · Demo</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #040507; color: #e7ecf5; font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif;
+      display: flex; align-items: center; justify-content: center; padding: 48px 16px 32px; box-sizing: border-box; }
+    main { width: 100%; max-width: 560px; }
+    h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: .02em; color: #fff; }
+    h1 span { color: #4a82f0; }
+    p.s { margin: 0 0 22px; color: #9fb0c7; }
+    .card { display: block; width: 100%; text-align: left; margin: 0 0 12px; padding: 16px 18px; border-radius: 16px; cursor: pointer;
+      background: linear-gradient(180deg, rgba(74,130,240,.14), rgba(74,130,240,.05)); border: 1px solid rgba(110,160,255,.35); color: inherit; font: inherit; }
+    .card:hover { border-color: rgba(140,180,255,.6); }
+    .card:focus-visible, .lnk:focus-visible, label:focus-within { outline: 2px solid #7fb0ff; outline-offset: 2px; }
+    .card b { display: block; font-size: 17px; color: #fff; margin-bottom: 3px; }
+    .card i { font-style: normal; color: #aebbd2; font-size: 14px; }
+    .card.is-sec { background: rgba(255,255,255,.03); border-color: rgba(120,160,255,.18); }
+    fieldset { border: 1px solid rgba(120,160,255,.18); border-radius: 14px; margin: 4px 0 16px; padding: 10px 14px 12px; }
+    legend { padding: 0 6px; color: #9fb0c7; font-size: 13px; }
+    label { display: flex; align-items: center; gap: 8px; min-height: 40px; cursor: pointer; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 16px; }
+    .lnk { background: none; border: 1px solid rgba(255,196,96,.4); color: #ffd38a; border-radius: 999px; padding: 0 14px; min-height: 40px; font: inherit; font-size: 13px; cursor: pointer; }
+    .meta { margin-top: 18px; font-size: 13px; color: #8a96aa; }
+    .meta b { color: #cfd8e8; font-weight: 600; }
+    .langs { display: flex; gap: 6px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1><span>AURIX</span> · Demo</h1>
+    <p class="s" data-t="s"></p>
+    <button type="button" class="card" data-demo="onboarding"><b data-t="on"></b><i data-t="onb"></i></button>
+    <fieldset>
+      <legend data-t="plan"></legend>
+      <label><input type="radio" name="demoPlan" value="free" checked> <span data-t="free"></span></label>
+      <label><input type="radio" name="demoPlan" value="premium"> <span data-t="prem"></span></label>
+    </fieldset>
+    <button type="button" class="card" data-demo="wealth"><b data-t="app"></b><i data-t="appb"></i></button>
+    <button type="button" class="card is-sec" data-demo="empty"><b data-t="empty"></b><i data-t="emptyb"></i></button>
+    <div class="row">
+      <button type="button" class="lnk" data-demo="reset" data-t="reset"></button>
+      <span class="langs"><button type="button" class="lnk" data-demo="lang" data-lang="es">ES</button><button type="button" class="lnk" data-demo="lang" data-lang="en">EN</button></span>
+    </div>
+    <p class="meta"><span data-t="ver"></span>: <b data-ver></b></p>
+    <p class="meta" data-t="sim"></p>
+  </main>
+  <script src="demo/demo-start.js"></script>
+</body>
+</html>

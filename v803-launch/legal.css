@@ -1,0 +1,139 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   AURIX · páginas públicas (soporte y legales)
+   ════════════════════════════════════════════════════════════════════════════
+   Hoja PROPIA y pequeña, no `styles.css`. La razón no es estética: estas tres
+   páginas tienen que abrirse SIN sesión, sin la app y sin depender de nada que
+   pueda fallar, y `styles.css` está escrita para el shell del producto (28k
+   líneas, tokens acoplados a componentes que aquí no existen). Lo que sí se
+   comparte son los VALORES del sistema de diseño, copiados literalmente de
+   `:root` en `styles.css`, para que estas páginas sean Aurix y no un folleto.
+   Si el sistema cambia, estas seis variables son el único punto a tocar. */
+:root {
+  --lg-bg:        #040507;                    /* --elev-0, el lienzo canónico */
+  --lg-surface:   #191E27;                    /* --elev-1-solid */
+  --lg-surface-2: #252C39;                    /* --elev-2-solid */
+  --lg-line:      rgba(165,196,255,0.14);
+  --lg-text:      rgba(255,255,255,0.985);    /* --text-bright */
+  --lg-muted:     #b0b4bd;                    /* --text-muted */
+  --lg-blue:      #4A82F0;                    /* --aurix-blue */
+  --lg-amber:     #e0a85c;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--lg-bg); }
+body {
+  color: var(--lg-text);
+  /* Sin Google Fonts: una página legal no puede depender de un tercero para
+     poder leerse, y así su CSP no necesita abrir `font-src` a nadie. */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  /* iPhone con notch: el contenido no se mete debajo de la barra del sistema. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ── CABECERA ─────────────────────────────────────────────────────────────── */
+.lg-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
+  max-width: 820px; margin: 0 auto; padding: 18px 20px 10px;
+}
+.lg-brand {
+  display: inline-flex; align-items: center; gap: 9px;
+  /* Es un enlace de navegación, no una firma: necesita altura de destino
+     táctil. Sin el `min-height` medía 28 px y la sonda lo cazó. */
+  min-height: 40px;
+  text-decoration: none; color: var(--lg-text);
+  font-size: 17px; font-weight: 800; letter-spacing: 0.14em;
+}
+.lg-brand img { width: 24px; height: 24px; display: block; }
+.lg-top-actions { display: flex; align-items: center; gap: 8px; }
+.lg-langs { display: inline-flex; border: 1px solid var(--lg-line); border-radius: 999px; overflow: hidden; }
+.lg-lang {
+  min-width: 44px; min-height: 34px; padding: 0 12px;
+  background: transparent; border: 0; cursor: pointer;
+  color: var(--lg-muted); font-size: 12px; font-weight: 800; letter-spacing: 0.06em;
+}
+.lg-lang.is-active { background: var(--lg-surface-2); color: var(--lg-text); }
+.lg-back {
+  display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px;
+  border-radius: 999px; border: 1px solid var(--lg-line); background: var(--lg-surface);
+  color: var(--lg-text); text-decoration: none; font-size: 13px; font-weight: 700;
+}
+.lg-back:hover { background: var(--lg-surface-2); }
+
+/* ── CUERPO ───────────────────────────────────────────────────────────────── */
+.lg-main { max-width: 820px; margin: 0 auto; padding: 8px 20px 56px; }
+.lg-title { margin: 14px 0 4px; font-size: 28px; line-height: 1.2; font-weight: 800; letter-spacing: -0.01em; }
+.lg-sub { margin: 0 0 22px; color: var(--lg-muted); font-size: 14.5px; }
+.lg-updated { margin: 0 0 26px; color: var(--lg-muted); font-size: 12.5px; letter-spacing: 0.02em; }
+.lg-card {
+  background: var(--lg-surface); border: 1px solid var(--lg-line);
+  border-radius: 16px; padding: 20px 22px; margin: 0 0 16px;
+}
+.lg-card h2 { margin: 0 0 10px; font-size: 18px; font-weight: 750; letter-spacing: -0.005em; }
+.lg-card h3 { margin: 18px 0 6px; font-size: 15px; font-weight: 700; }
+.lg-card p, .lg-card li { color: var(--lg-muted); font-size: 15px; }
+.lg-card p { margin: 0 0 12px; }
+.lg-card p:last-child, .lg-card ul:last-child { margin-bottom: 0; }
+.lg-card ul { margin: 0 0 12px; padding-left: 20px; }
+.lg-card li { margin: 0 0 6px; }
+.lg-card strong { color: var(--lg-text); font-weight: 700; }
+.lg-card a { color: var(--lg-blue); }
+
+/* El correo de soporte es la acción, no una línea más de texto. */
+.lg-action {
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 46px; padding: 0 20px; margin: 4px 0 2px;
+  border-radius: 12px; background: var(--lg-blue); border: 0;
+  color: #fff; text-decoration: none; font-size: 15px; font-weight: 750;
+}
+.lg-action:hover { filter: brightness(1.08); }
+.lg-mail {
+  display: block; margin: 10px 0 0; font-size: 15px; font-weight: 700;
+  color: var(--lg-text); word-break: break-all;
+}
+
+/* ── EL AVISO DE BORRADOR ─────────────────────────────────────────────────
+   Un texto legal sin revisar NO puede parecer aprobado. Este aviso es visible,
+   no un pie de página, y se retira EN EL MISMO COMMIT en que el titular apruebe
+   el texto y rellene los datos marcados. */
+.lg-draft {
+  display: block; margin: 0 0 20px; padding: 14px 16px;
+  border-radius: 14px; border: 1px solid rgba(224,168,92,0.42);
+  background: rgba(224,168,92,0.10); color: #f3cf9a; font-size: 14px;
+}
+.lg-draft b { color: #ffd89a; }
+/* Un dato que falta se ve como lo que es: un hueco, no una afirmación. */
+.lg-todo {
+  display: inline-block; padding: 1px 7px; border-radius: 6px;
+  background: rgba(224,168,92,0.16); border: 1px dashed rgba(224,168,92,0.5);
+  color: #f3cf9a; font-size: 13px; font-weight: 700; font-style: normal;
+}
+
+/* ── PIE ──────────────────────────────────────────────────────────────────── */
+.lg-foot {
+  max-width: 820px; margin: 0 auto; padding: 22px 20px 40px;
+  border-top: 1px solid var(--lg-line);
+  display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center;
+}
+.lg-foot a { color: var(--lg-muted); text-decoration: none; font-size: 14px; min-height: 34px; display: inline-flex; align-items: center; }
+.lg-foot a:hover { color: var(--lg-text); }
+.lg-foot a[aria-current="page"] { color: var(--lg-text); font-weight: 700; }
+
+/* El idioma que no está activo no se pinta. Sin JS se ve el español, que es el
+   idioma por defecto del producto: la página nunca queda en blanco. */
+[data-lang-block="en"] { display: none; }
+/* `revert`, no `block`: el mismo atributo se usa en un <div> de sección y en un
+   <span> dentro de un enlace, y forzar `block` convertiría el segundo en una
+   caja de bloque dentro de un botón. Cada elemento vuelve a SU display. */
+html[lang="en"] [data-lang-block="en"] { display: revert; }
+html[lang="en"] [data-lang-block="es"] { display: none; }
+
+@media (max-width: 480px) {
+  .lg-main { padding-left: 16px; padding-right: 16px; }
+  .lg-top { padding-left: 16px; padding-right: 16px; }
+  .lg-foot { padding-left: 16px; padding-right: 16px; }
+  .lg-title { font-size: 24px; }
+  .lg-card { padding: 16px 16px; border-radius: 14px; }
+}
