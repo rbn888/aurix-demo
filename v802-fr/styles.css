@@ -30287,3 +30287,4 @@ body.ws-cover .aurix-wsh { max-width: none; }
 .settings-fx-note { margin: 2px 0 10px; font-size: 12.5px; line-height: 1.45; color: var(--text-muted); }
 .settings-fx-note.is-warn { color: var(--aurix-warning); }
 #totalValue[data-fx-approx]::before { content: '≈ '; opacity: .7; }
+@media (max-width: 767px) { .update-fx-note { display: none; } }

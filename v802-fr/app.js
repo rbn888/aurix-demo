@@ -4849,7 +4849,8 @@ const T = {
     fxRateLine:      (r, src, d) => `Cambio EUR/USD: 1 € = ${r} $ · ${src} · ${d}`,
     fxRateStale:     (r, d) => `Cambio EUR/USD no actual: último conocido 1 € = ${r} $ (${d}). Los totales convertidos son aproximados.`,
     fxRateNone:      'Sin tipo de cambio EUR/USD disponible: los totales convertidos son aproximados.',
-    fxHeroApprox:    ' · total aproximado: cambio EUR/USD no actual',
+    fxHeroApprox:    ' · cambio no actual',   // corto: el «≈» marca el total; el detalle está en Ajustes
+    fxHeroApproxLong: 'Total aproximado: el cambio EUR/USD no es actual (detalle en Ajustes).',
     rateLimit:       'Límite de API — reintentando pronto',
     // Autosave status
     saveSaving:      'Guardando…',
@@ -8214,7 +8215,8 @@ const T = {
     fxRateLine:      (r, src, d) => `EUR/USD rate: €1 = $${r} · ${src} · ${d}`,
     fxRateStale:     (r, d) => `EUR/USD rate not current: last known €1 = $${r} (${d}). Converted totals are approximate.`,
     fxRateNone:      'No EUR/USD exchange rate available: converted totals are approximate.',
-    fxHeroApprox:    ' · approximate total: EUR/USD rate not current',
+    fxHeroApprox:    ' · FX not current',
+    fxHeroApproxLong: 'Approximate total: the EUR/USD rate is not current (details in Settings).',
     rateLimit:       'API limit — retrying soon',
     // Autosave status
     saveSaving:      'Saving…',
@@ -58501,9 +58503,17 @@ function setUpdateStatus(state) {
     const st = _aurixFxNoteRender();
     if (st.status !== 'live' && _aurixFxEurInvolved()) _fxSuffix = t('fxHeroApprox');
     const tv = document.getElementById('totalValue');
-    if (tv) { if (_fxSuffix) tv.setAttribute('data-fx-approx', st.status); else tv.removeAttribute('data-fx-approx'); }
+    if (tv) {
+      if (_fxSuffix) { tv.setAttribute('data-fx-approx', st.status); tv.setAttribute('title', t('fxRateNone') && (st.status === 'none' ? t('fxRateNone') : t('fxHeroApproxLong'))); tv.setAttribute('aria-label', tv.textContent + ' — ' + t('fxHeroApproxLong')); }
+      else { tv.removeAttribute('data-fx-approx'); tv.removeAttribute('title'); tv.removeAttribute('aria-label'); }
+    }
   } catch (_) {}
-  updateTextEl.textContent = (msg[state] ?? '') + ((state === 'ok' || state === 'error') ? _fxSuffix : '');
+  updateTextEl.textContent = msg[state] ?? '';
+  // El texto corto sólo desde 768 px (CSS): en móvil el hero no cambia de forma — basta el «≈».
+  if (_fxSuffix && (state === 'ok' || state === 'error')) {
+    const sp = document.createElement('span'); sp.className = 'update-fx-note'; sp.textContent = _fxSuffix;
+    updateTextEl.appendChild(sp);
+  }
 }
 
 
