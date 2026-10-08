@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="demo/aurix-demo-runtime.js"></script>
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <!-- ══ SECURITY-HARDENING-V1 · owner: login.html <head> ═════════════════════════
+       Same rationale as index.html (GitHub Pages cannot send response headers), but
+       the access page has a strictly smaller surface: no remote images at all, and
+       the only third parties are jsDelivr (supabase-js) and Google Fonts. Keeping
+       this policy separate from the app shell is deliberate — the auth page must not
+       inherit the app's wider image/API allow-list. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; form-action 'self'; manifest-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <script>
+    // SECURITY-HARDENING-V1 · clickjacking guard. The access page is the highest-value
+    // framing target (OTP entry), and neither X-Frame-Options nor CSP frame-ancestors is
+    // available on GitHub Pages / in a <meta> CSP. No effect when not framed.
+    (function () {
+      try {
+        if (window.top === window.self) return;
+        try { window.top.location = window.self.location; }
+        catch (_) { document.documentElement.style.display = 'none'; }
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- AURIX-APP-DOMAIN-READY-1: no <base href> — relative links work under
+       /Aurix/ (GitHub Pages) and at the root custom domain. -->
+  <style>
+    /* AURIX-MOBILE-HERO-LOADER-CHART-PREMIUM-1: paint the Aurix dark surface
+       on the very first frame — ahead of the render-blocking styles.css — so
+       iOS/PWA/mobile Safari never flashes a white frame before the auth form.
+       Matches --bg (#05070f), the real body background, so there is no
+       flash-then-shift when the stylesheet finishes parsing. */
+    html, body { background:#05070f; margin:0; }
+  </style>
+  <title>AURIX — Acceso</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#0E131F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Aurix">
+  <script>
+    // PWA-CONSISTENCY-1: global build identifier + standalone detection.
+    // Runs synchronously before any other script so a stale build cannot
+    // serve a half-cached app. Same user + same account must render the
+    // same code on Safari mobile, the iOS home-screen PWA, and desktop.
+    (function() {
+      window.AURIX_BUILD = 'pwa-consistency-2-lr3';
+      try {
+        var KEY     = 'aurix_build';
+        // P0 MOBILE-BOOT-HARDFIX — NO reload on build change (the purge+reload could
+        // infinite-loop on a stale-cached page). Just record the build + best-effort,
+        // non-blocking cleanup of any legacy service worker / cache. Always boots.
+        try { localStorage.setItem(KEY, window.AURIX_BUILD); } catch (_) {}
+        try {
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) { regs.forEach(function(r) { try { r.unregister(); } catch (_) {} }); }).catch(function() {});
+          }
+          if (typeof caches !== 'undefined' && caches.keys) {
+            caches.keys().then(function(keys) { keys.forEach(function(k) { try { caches.delete(k); } catch (_) {} }); }).catch(function() {});
+          }
+        } catch (_) {}
+        // Standalone detection — iOS Safari + modern display-mode media query.
+        var iosStandalone = window.navigator.standalone === true;
+        var mqStandalone  = false;
+        try { mqStandalone = window.matchMedia('(display-mode: standalone)').matches; } catch (_) {}
+        var isStandalone  = iosStandalone || mqStandalone;
+        window.IS_STANDALONE     = isStandalone;
+        window.IS_IOS_STANDALONE = iosStandalone;
+        document.documentElement.setAttribute('data-standalone', isStandalone ? 'true' : 'false');
+        if (iosStandalone) document.documentElement.setAttribute('data-ios-standalone', 'true');
+      } catch (_) { /* boot guard must never throw */ }
+    })();
+  </script>
+  <link href="vendor/inter.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-5);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: -30%;
+      background:
+        radial-gradient(circle 750px at 22% 32%, rgba(79,142,247,.10) 0%, transparent 60%),
+        radial-gradient(circle 600px at 80% 74%, rgba(39,199,104,.06) 0%, transparent 60%);
+      animation: beta-bg-drift 26s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    /* ── Invite section ── */
+    .invite-section {
+      width: 100%;
+      margin-bottom: var(--space-5);
+    }
+
+    .invite-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .invite-check {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      color: var(--green);
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-spring);
+    }
+
+    .invite-check.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* ── Inputs ── */
+    .auth-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 200ms ease, background 200ms ease;
+    }
+
+    .auth-input:focus {
+      border-color: rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .auth-input::placeholder { color: var(--text-dim); }
+    .auth-input:disabled     { opacity: 0.35; }
+
+    .otp-input {
+      text-align: center;
+      font-size: 22px;
+      letter-spacing: 0.25em;
+      font-weight: 600;
+    }
+
+    /* ── Auth section (locked/unlocked) ── */
+    .auth-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .locked {
+      opacity: 0.4;
+      filter: blur(4px);
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+    }
+
+    .unlocked {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0);
+      pointer-events: auto;
+      transition: opacity 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+    }
+
+    /* ── Auth title ── */
+    .auth-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+    }
+
+    /* ── OTP hint ── */
+    .otp-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.01em;
+    }
+
+    /* OTP destination email — surfaced before the code field so a typo in
+       the email is caught before the user waits for a code that won't come. */
+    .otp-dest {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-bright);
+      text-align: center;
+      letter-spacing: 0.01em;
+      word-break: break-all;
+      margin: -4px 0 2px;
+    }
+
+    /* ── Submit button ── */
+    .auth-btn {
+      width: 100%;
+      margin-top: 2px;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(79, 142, 247, 0.25);
+      background: rgba(79, 142, 247, 0.14);
+      color: #7fb8ff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 160ms ease, transform 120ms ease;
+    }
+
+    .auth-btn:hover:not(:disabled) { opacity: 0.82; }
+    .auth-btn:active:not(:disabled) { transform: scale(0.97); }
+    .auth-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── Feedback message ── */
+    .auth-error {
+      font-size: 12px;
+      text-align: center;
+      min-height: 16px;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Secondary links ── */
+    .auth-link {
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.01em;
+      transition: color 160ms ease;
+      margin-top: 2px;
+    }
+
+    .auth-link:hover { color: var(--text); }
+
+    /* OTP-RESEND-1: button reset so a <button> can use .auth-link
+       styling and pick up a native :disabled state during cooldown. */
+    button.auth-link {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      width: 100%;
+    }
+    button.auth-link:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.auth-link:disabled:hover { color: var(--text-muted); }
+    /* ══ ONBOARDING PREMIUM · ACCESO ══════════════════════════════════════════
+       El mismo lenguaje que el onboarding: negro profundo, superficie negra con
+       matiz azul, azul eléctrico. Halo y estrellas detrás (sin eventos), animando
+       sólo opacidad. Con el teclado abierto la página desplaza en vez de recortar. */
+    body { background: #030407; overflow-x: hidden; overflow-y: auto; }
+    body::before {
+      inset: 0; animation: none;
+      background: radial-gradient(56% 42% at 50% 40%, rgba(46, 98, 230, 0.20), transparent 72%);
+    }
+    body::after {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        radial-gradient(1.2px 1.2px at 9% 16%,  rgba(200,218,255,.70) 50%, transparent 52%),
+        radial-gradient(1px 1px     at 22% 72%, rgba(200,218,255,.55) 50%, transparent 52%),
+        radial-gradient(1.4px 1.4px at 37% 9%,  rgba(170,200,255,.60) 50%, transparent 52%),
+        radial-gradient(1px 1px     at 58% 88%, rgba(200,218,255,.50) 50%, transparent 52%),
+        radial-gradient(1.2px 1.2px at 71% 21%, rgba(200,218,255,.65) 50%, transparent 52%),
+        radial-gradient(1px 1px     at 84% 63%, rgba(170,200,255,.55) 50%, transparent 52%),
+        radial-gradient(1.3px 1.3px at 93% 34%, rgba(200,218,255,.60) 50%, transparent 52%);
+      opacity: .55; animation: lgStarGlow 7s ease-in-out infinite alternate;
+    }
+    @keyframes lgStarGlow { from { opacity: .35; } to { opacity: .7; } }
+    .beta-container { position: relative; z-index: 1; }
+    .beta-card {
+      background: radial-gradient(120% 60% at 50% 0%, rgba(58,108,235,.16), transparent 60%), linear-gradient(180deg, rgba(12,20,40,.96), rgba(5,8,17,.98));
+      border: 1px solid rgba(90,140,255,.22);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset, 0 30px 90px -30px rgba(0,0,0,.92), 0 0 90px -34px rgba(74,130,240,.55);
+    }
+    .beta-access-label { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; text-transform: none; }
+    .beta-hint { color: rgba(214,224,245,.76); font-size: 13.5px; line-height: 1.5; max-width: 320px; margin-left: auto; margin-right: auto; }
+    .auth-field-label { display: block; align-self: stretch; text-align: left; font-size: 12.5px; font-weight: 600; color: rgba(214,224,245,.78); margin: 4px 0 -2px; }
+    .auth-input { background: rgba(255,255,255,.035); border-color: rgba(120,160,255,.22); color: #fff; min-height: 48px; font-size: 16px; }
+    .auth-input:focus { border-color: rgba(120,170,255,.7); box-shadow: 0 0 0 3px rgba(74,130,240,.18); }
+    .auth-btn { min-height: 48px; border: 0; color: #fff; background: linear-gradient(180deg, #5b8cff 0%, #3e70e6 100%); box-shadow: 0 10px 26px -12px rgba(74,130,240,.85); }
+    .auth-btn:disabled { opacity: .42; box-shadow: none; }
+    .auth-btn:focus-visible, .auth-link:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 2px; }
+    .otp-hint { color: rgba(214,224,245,.74); font-size: 13px; }
+    button.auth-link, .auth-link { min-height: 40px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; color: rgba(160,190,255,.92); }
+    .auth-error { font-size: 12.5px; }
+    @media (max-height: 640px) { body { align-items: flex-start; } }
+    .beta-card { position: relative; }
+    .beta-card .beta-access-label { padding: 0; margin-top: 30px; }
+    .lg-lang { position: absolute; top: 12px; right: 12px; display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px;
+      background: rgba(255,255,255,.035); border: 1px solid rgba(120,160,255,.20); z-index: 2; }
+    .lg-lang-btn { min-width: 40px; min-height: 36px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+      font: 700 12.5px/1 inherit; letter-spacing: .06em; color: rgba(214,224,245,.70); position: relative; }
+    .lg-lang-btn::after { content: ''; position: absolute; inset: -4px -2px; }
+    .lg-lang-btn.is-on { background: rgba(74,130,240,.28); color: #fff; box-shadow: 0 0 0 1px rgba(120,170,255,.55) inset; }
+    .lg-lang-btn:focus-visible { outline: 2px solid #8fb6ff; outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) { body::after { animation: none; } }
+  </style>
+</head>
+<body>
+
+  <div class="beta-container">
+
+    <div class="beta-logo-above">
+      <span class="logo-aurix">AURIX</span>
+    </div>
+
+    <div class="beta-card">
+      <div class="lg-lang" role="group" aria-label="Idioma · Language">
+        <button type="button" class="lg-lang-btn" data-lg-lang="es" lang="es" aria-pressed="false">ES</button>
+        <button type="button" class="lg-lang-btn" data-lg-lang="en" lang="en" aria-pressed="false">EN</button>
+      </div>
+      <!-- M.06 · IDENTITY — este markup servía el estado de BETA PRIVADA (etiqueta y copy de
+           invitación, `authSection` con clase `locked`, y `#email`/`#auth-submit` con `disabled`)
+           y sólo un script inline POSTERIOR lo abría. Si ese script fallaba —un error anterior en
+           el mismo bloque, una extensión, CSP— un cliente legítimo quedaba BLOQUEADO por un muro
+           que no le corresponde, y en el mejor caso veía un destello de copy de beta privada.
+           El muro es CLIENT-ONLY y no concede acceso a nada: la frontera real es el OTP del
+           servidor. Así que el DEFECTO correcto es ABIERTO, y `_applyPrivateBetaGate()` lo CIERRA
+           sólo si el lanzamiento público no está abierto. Un fallo de presentación ya no puede
+           convertirse en denegación de servicio para quien sí tiene derecho a entrar. -->
+      <div class="beta-access-label" data-i18n="lg.publicAccess">Bienvenido a Aurix</div>
+      <p class="beta-hint" data-i18n="lg.publicHint">Todo tu patrimonio, en una sola visión. Entra o crea tu cuenta con tu correo: te enviaremos un código, sin contraseñas.</p>
+
+      <!-- Invite gate — oculto por defecto; `_applyPrivateBetaGate()` lo muestra si hace falta. -->
+      <div class="invite-section" style="display:none">
+        <div class="invite-row">
+          <input id="inviteCode" class="auth-input" type="text"
+                 placeholder="Código de invitación" data-i18n-ph="lg.invitePh"
+                 autocomplete="off" spellcheck="false">
+          <svg id="inviteCheck" class="invite-check" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Email step — ABIERTO por defecto (ver la nota de arriba). -->
+      <div id="authSection" class="auth-section unlocked">
+        <label class="auth-title auth-field-label" for="email" data-i18n="lg.signin">Tu correo electrónico</label>
+        <input id="email" type="email" class="auth-input"
+               placeholder="correo electrónico" data-i18n-ph="lg.emailPh"
+               autocomplete="email">
+        <button id="auth-submit" class="auth-btn" data-i18n="lg.sendCode">Enviar código de acceso</button>
+        <p id="auth-error" class="auth-error"></p>
+      </div>
+
+      <!-- OTP step (shown after email is sent) -->
+      <div id="otpSection" class="auth-section" style="display:none">
+        <h2 class="auth-title" data-i18n="lg.otpTitle">Introduce tu código</h2>
+        <p class="otp-hint" data-i18n="lg.otpHint">Te hemos enviado un código de acceso a:</p>
+        <p class="otp-dest" id="otpDestEmail"></p>
+        <input id="otp-code" type="text" inputmode="numeric" pattern="[0-9]*"
+               class="auth-input otp-input" placeholder="00000000"
+               maxlength="8" autocomplete="one-time-code">
+        <button id="otp-submit" class="auth-btn" data-i18n="lg.verify">Verificar código</button>
+        <p id="otp-error" class="auth-error"></p>
+        <button id="otp-resend" type="button" class="auth-link" data-i18n="lg.resend">Reenviar código</button>
+        <p class="auth-link" id="otp-back" data-i18n="lg.otherEmail">Usar otro email</p>
+      </div>
+
+      <!-- SPEC AUTH-CONTINUITY · IN-APP BROWSER CONVERSION. Interstitial mostrado
+           EN LUGAR del formulario cuando la página se abre dentro del navegador
+           interno de una app conocida. No es un error ni un bloqueo: una WebView
+           es un contenedor de almacenamiento aislado, así que la sesión creada ahí
+           no existiría en Safari/Chrome y el usuario tendría que repetir el OTP.
+           Reutiliza las clases del propio login (.auth-title/.auth-btn/.auth-link/
+           .beta-hint): sin sistema visual nuevo. -->
+      <div id="embeddedSection" class="auth-section" style="display:none">
+        <h2 class="auth-title" data-i18n="lg.emb.title">Continúa en tu navegador</h2>
+        <p class="beta-hint" data-i18n="lg.emb.text">Abre Aurix en Safari o Chrome para mantener tu sesión iniciada y acceder más fácilmente la próxima vez.</p>
+        <button id="embOpen" type="button" class="auth-btn" data-i18n="lg.emb.cta">Abrir en el navegador</button>
+        <button id="embCopy" type="button" class="auth-link" data-i18n="lg.emb.copy">Copiar enlace</button>
+        <p id="embManual" class="otp-hint" style="display:none" data-i18n="lg.emb.manual">Pulsa ⋯ (o el icono de Safari) y elige «Abrir en Safari». También puedes copiar el enlace y pegarlo en Safari.</p>
+        <p class="otp-hint" data-i18n="lg.emb.micro">Solo tendrás que iniciar sesión una vez en ese navegador.</p>
+      </div>
+
+      <!-- M.06 · el sello `Private Beta • v0.1` era PERMANENTE en la puerta de un producto que
+           cobra: la función que abría el formulario reescribía la etiqueta y el copy pero nunca esto. -->
+      <p class="beta-version">Aurix &bull; v1.0</p>
+    </div>
+
+  </div>
+  <script src="config.js"></script>
+  <script src="services/ux.js"></script>
+  <script>
+    'use strict';
+
+    // OBSERVABILITY-LOGIN-1: tiny inline reporter for the login flow.
+    // Mirrors the app.js reporter contract — same /api/client-log endpoint,
+    // same payload allowlist, no PII (no email, invite code or OTP token).
+    // Removable: delete this IIFE plus every _reportLoginSafe call site.
+    (function () {
+      const _isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (_isDev) { window._reportLogin = function () {}; return; }
+      try {
+        // AURIX-APP-DOMAIN-READY-1: API origin from the shared source of truth
+        // (window.AURIX_API_BASE in config.js, loaded just above). Falls back to
+        // the current Vercel project so a missing config can never break login.
+        const _apiBase    = (typeof window.AURIX_API_BASE === 'string')
+          ? window.AURIX_API_BASE
+          : 'https://demo-api.aurix.invalid';
+        const ENDPOINT    = _apiBase + '/api/client-log';
+        const MAX_REPORTS = 5;
+        const seen        = new Set();
+        let sent          = 0;
+        function trim(s, n) {
+          if (typeof s !== 'string') return '';
+          return s.length > n ? s.slice(0, n) : s;
+        }
+        // SECURITY-HARDENING-V1 · outbound redaction, identical contract to the app.js
+        // reporter. It matters MORE here: this page handles the email + the OTP, so an
+        // error string that interpolates either one must never leave the device.
+        const RX_JWT    = /\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}/g;
+        const RX_BEARER = /\b[Bb]earer\s+[A-Za-z0-9._-]+/g;
+        const RX_EMAIL  = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+        const RX_TOKEN  = /\b[A-Za-z0-9_-]{28,}\b/g;
+        function redact(s) {
+          if (typeof s !== 'string') return '';
+          try {
+            return s.replace(RX_JWT, '[redacted]')
+                    .replace(RX_BEARER, '[redacted]')
+                    .replace(RX_EMAIL, '[redacted]')
+                    .replace(RX_TOKEN, '[redacted]');
+          } catch (_) { return s; }
+        }
+        function send(kind, msg, stack) {
+          try {
+            if (navigator.onLine === false) return;
+            if (sent >= MAX_REPORTS) return;
+            const sig = (kind || '') + '|' + (msg || '').slice(0, 120);
+            if (seen.has(sig)) return;
+            seen.add(sig);
+            sent++;
+            const payload = {
+              build: window.AURIX_BUILD || '',
+              ts:    Date.now(),
+              kind:  kind || 'unknown',
+              msg:   redact(trim(msg, 500)),
+              stack: redact(trim(stack, 1500)),
+              path:  trim(location.pathname, 200),
+              ua:    trim(navigator.userAgent, 300),
+            };
+            fetch(ENDPOINT, {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body:    JSON.stringify(payload),
+              keepalive: true,
+              mode:    'cors',
+              credentials: 'omit',
+            }).catch(function () {});
+          } catch (_) { /* reporter must never throw */ }
+        }
+        window._reportLogin = send;
+        window.addEventListener('error', function (e) {
+          try {
+            const file = (e && e.filename) || '';
+            if (file.indexOf('chrome-extension://') === 0 ||
+                file.indexOf('moz-extension://')    === 0 ||
+                file.indexOf('safari-extension://') === 0) return;
+            send('uncaught', (e && e.message) || 'uncaught', (e && e.error && e.error.stack) || '');
+          } catch (_) {}
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          try {
+            const r = e && e.reason;
+            send('unhandledrejection', r ? (r.message || String(r)) : 'unhandledrejection', (r && r.stack) || '');
+          } catch (_) {}
+        });
+      } catch (_) { /* reporter setup must never throw */ }
+    })();
+
+    function _reportLoginSafe(kind, msg, stack) {
+      try {
+        if (typeof window._reportLogin === 'function') {
+          window._reportLogin(kind, msg, stack);
+        }
+      } catch (_) {}
+    }
+
+    // ── Supabase client ────────────────────────────────────────
+    let client = null;
+    if (typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined' && window.supabase) {
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    // ── SPEC AUTH.MOBILE.OTP.E2E.02 — privacy-safe cross-page auth trace ──
+    // Bounded sessionStorage ring buffer shared with app.js (same key) so the exact mobile OTP
+    // break stage is provable on-device. NEVER records an OTP, invite secret, full email, or token —
+    // only booleans / stage names / error class / pathname / platform slice / visibility / event.
+    var _AURIX_AUTH_TRACE_KEY = 'aurix_auth_trace';
+    function _authTrace(stage, extra) {
+      try {
+        var arr = [];
+        try { arr = JSON.parse(sessionStorage.getItem(_AURIX_AUTH_TRACE_KEY) || '[]'); } catch (_) { arr = []; }
+        if (!Array.isArray(arr)) arr = [];
+        var e = Object.assign({
+          ts: Date.now(), stage: String(stage || ''),
+          pathname: (function () { try { return location.pathname; } catch (_) { return null; } })(),
+          platform: (function () { try { return (navigator.userAgent || '').slice(0, 80); } catch (_) { return null; } })(),
+          visibility: (function () { try { return document.visibilityState; } catch (_) { return null; } })(),
+        }, extra || {});
+        arr.push(e); while (arr.length > 40) arr.shift();
+        try { sessionStorage.setItem(_AURIX_AUTH_TRACE_KEY, JSON.stringify(arr)); } catch (_) {}
+      } catch (_) {}
+    }
+    function _authStorageKeyPresent() {
+      try { return Object.keys(localStorage).some(function (k) { return /^sb-.*-auth-token$/.test(k); }); } catch (_) { return false; }
+    }
+    try {
+      window.aurixAuthDebug = function () { try { var a = JSON.parse(sessionStorage.getItem(_AURIX_AUTH_TRACE_KEY) || '[]'); console.table(a); return a; } catch (_) { return []; } };
+      window.aurixAuthDebugExport = function () { try { return JSON.stringify(JSON.parse(sessionStorage.getItem(_AURIX_AUTH_TRACE_KEY) || '[]'), null, 2); } catch (_) { return '[]'; } };
+    } catch (_) {}
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SPEC AUTH.DESKTOP.OTP.WEB-ONLY.FAILURE.01 — desktop diagnostics + scoped self-heal
+    // ════════════════════════════════════════════════════════════════════════
+    // Mobile OTP works; desktop can be blocked by desktop-side STATE: stale-cached login.html, a stale
+    // redirect breaker / pending-login state, or corrupt Supabase auth storage. These are read-only
+    // diagnostics + narrowly-scoped self-heal. They NEVER touch portfolio / holdings / chart / history
+    // data and NEVER log a secret. app.js already exposes aurixClearAuthRedirectState for the app page.
+    var AURIX_LOGIN_BUILD = 493;   // bumped ONLY when login.html changes (see version.json.loginhtml)
+    function _storageAvailable() {
+      try { var k = '__aurix_probe__'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch (_) { return false; }
+    }
+    function _breakerKeysPresent() {
+      try { return !!(sessionStorage.getItem('aurix_redirect_log') || sessionStorage.getItem('aurix_redirect_broken')); } catch (_) { return false; }
+    }
+    window.aurixAuthEnvironmentCheck = function () {
+      var iso = function (t) { try { return Number.isFinite(t) ? new Date(t).toISOString() : null; } catch (_) { return null; } };
+      var ua = ''; try { ua = navigator.userAgent || ''; } catch (_) {}
+      var isMobileUA = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+      var trace = []; try { trace = JSON.parse(sessionStorage.getItem(_AURIX_AUTH_TRACE_KEY) || '[]'); } catch (_) {}
+      var lastRedirect = null; try { lastRedirect = JSON.parse(sessionStorage.getItem('aurix_last_redirect') || 'null'); } catch (_) {}
+      var out = {
+        currentUrl: (function () { try { return location.href; } catch (_) { return null; } })(),
+        page: 'login.html', loginBuild: AURIX_LOGIN_BUILD,
+        loginMarkerPresent: true,   // this code IS the fresh login.html marker
+        uaCategory: isMobileUA ? 'mobile' : 'desktop',
+        localStorageAvailable: _storageAvailable(),
+        sessionStorageAvailable: (function () { try { sessionStorage.setItem('__p__', '1'); sessionStorage.removeItem('__p__'); return true; } catch (_) { return false; } })(),
+        supabaseAuthKeyPresent: _authStorageKeyPresent(),
+        redirectBreakerKeysPresent: _breakerKeysPresent(),
+        serviceWorkerRegistered: false,
+        authTraceCount: Array.isArray(trace) ? trace.length : 0,
+        lastAuthStage: (Array.isArray(trace) && trace.length) ? trace[trace.length - 1].stage : null,
+        lastRedirectReason: lastRedirect ? (lastRedirect.source || lastRedirect.target) : null,
+        sessionPresent: null, userPresent: null,
+        // cache suspicion — set once version.json is fetched (below)
+        servedLoginHtmlVersion: (window.__AURIX_SERVED_LOGINHTML != null) ? window.__AURIX_SERVED_LOGINHTML : null,
+        staleLoginHtml: (window.__AURIX_SERVED_LOGINHTML != null) ? (window.__AURIX_SERVED_LOGINHTML > AURIX_LOGIN_BUILD) : null,
+        versionMismatch: (window.__AURIX_SERVED_LOGINHTML != null) ? (window.__AURIX_SERVED_LOGINHTML !== AURIX_LOGIN_BUILD) : null,
+      };
+      try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) navigator.serviceWorker.getRegistrations().then(function (r) { out.serviceWorkerRegistered = !!(r && r.length); }); } catch (_) {}
+      try { if (client && client.auth) { client.auth.getSession().then(function (r) { out.sessionPresent = !!(r && r.data && r.data.session); }); client.auth.getUser().then(function (r) { out.userPresent = !!(r && r.data && r.data.user); }); } } catch (_) {}
+      try { console.log('%c[UI][AUTH_ENV_CHECK]', 'font-weight:700;color:#4da3ff', out); } catch (_) {}
+      return out;
+    };
+    // Clears ONLY Aurix redirect/breaker/pending-login state + stale auth trace. Optional signOut.
+    // Never removes portfolio / holdings / chart / performance data.
+    window.aurixResetLoginState = function (opts) {
+      opts = opts || {};
+      try { sessionStorage.removeItem('aurix_redirect_log'); } catch (_) {}
+      try { sessionStorage.removeItem('aurix_redirect_broken'); } catch (_) {}
+      try { sessionStorage.removeItem('aurix_last_redirect'); } catch (_) {}
+      try { sessionStorage.removeItem(_AURIX_AUTH_TRACE_KEY); } catch (_) {}
+      try { sessionStorage.removeItem('aurix_login_stale_reloaded'); } catch (_) {}
+      var didSignOut = false;
+      if (opts.signOut === true) { try { if (client && client.auth) { client.auth.signOut(); didSignOut = true; } } catch (_) {} }
+      try { console.log('[AUTH][RESET_LOGIN_STATE] cleared redirect/breaker/trace (portfolio/chart data untouched)', { signOut: didSignOut }); } catch (_) {}
+      return { cleared: true, signOut: didSignOut };
+    };
+    // Hard auth reset: signOut + remove ONLY this project's Supabase auth storage keys + Aurix redirect/
+    // trace keys. Never removes portfolio / holdings / chart / performance data.
+    window.aurixHardAuthReset = function () {
+      try { if (client && client.auth) client.auth.signOut(); } catch (_) {}
+      var removed = [];
+      try { Object.keys(localStorage).forEach(function (k) { if (/^sb-.*-auth-token$/.test(k)) { localStorage.removeItem(k); removed.push(k); } }); } catch (_) {}
+      window.aurixResetLoginState();
+      try { console.log('%c[AUTH][HARD_AUTH_RESET] removed Supabase auth keys + redirect/trace ONLY. Portfolio/chart data NOT touched. Reload the page and log in again.', 'font-weight:700;color:#e6a100', { removedKeys: removed.length }); } catch (_) {}
+      return { signedOut: true, removedAuthKeys: removed.length };
+    };
+    // SPEC AUTH.DESKTOP.OTP.WEB-ONLY.FAILURE.01 (Phase 4) — stale login.html guard. index.html self-heals
+    // app.js staleness, but login.html deliberately never reloaded on build change (mobile loop safety), so
+    // a desktop browser can run an OLD login.html indefinitely. Compare the SERVED version.json.loginhtml to
+    // this file's AURIX_LOGIN_BUILD and, on DESKTOP ONLY, do a single cache-bust reload if stale. One-shot
+    // (sessionStorage guard) ⇒ can never loop. Mobile keeps its existing no-reload behaviour untouched.
+    (function _aurixLoginStaleGuard() {
+      try {
+        var isMobileUA = /Mobi|Android|iPhone|iPad|iPod/i.test((navigator.userAgent || ''));
+        fetch('version.json?cb=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+          var served = (j && typeof j.loginhtml === 'number') ? j.loginhtml : null;
+          window.__AURIX_SERVED_LOGINHTML = served;
+          if (served == null || served <= AURIX_LOGIN_BUILD) return;          // fresh (or field absent)
+          if (isMobileUA) return;                                             // mobile: intentional no-reload
+          var already = false; try { already = sessionStorage.getItem('aurix_login_stale_reloaded') === '1'; } catch (_) {}
+          if (already) return;                                                // one-shot — never loops
+          try { sessionStorage.setItem('aurix_login_stale_reloaded', '1'); } catch (_) {}
+          try { console.warn('[AUTH][STALE_LOGIN_HTML] served loginhtml ' + served + ' > built ' + AURIX_LOGIN_BUILD + ' — one-time cache-bust reload'); } catch (_) {}
+          try { location.replace('login.html?v=' + served); } catch (_) { try { location.reload(); } catch (__) {} }
+        }).catch(function () {});
+      } catch (_) {}
+    })();
+
+    // ── i18n (EN/ES) ───────────────────────────────────────────
+    // Language resolution: ?lang= handoff from the landing (cross-origin, since
+    // localStorage is not shared) → else the shared 'portfolio_lang' key → else
+    // Spanish. The choice is persisted so index.html stays in the same language
+    // after sign-in. No more hardcoded Spanish on this screen.
+    // M.03 · B — MISMA precedencia que index.html: `?lang=` es una elección
+    // EXPLÍCITA y gana; `?langhint=` es sólo el idioma con el que se mostraba la
+    // landing y se aplica únicamente si este contenedor no tiene preferencia.
+    // ── IDIOMA DESDE EL ACCESO (ONBOARDING · CIERRE) ─────────────────────────
+    // Precedencia: elección EXPLÍCITA (`?lang=` de la landing o el selector ES|EN de
+    // esta tarjeta) → preferencia guardada (`portfolio_lang`) → `?langhint=` → idioma
+    // del navegador (es/es-* → español; cualquier otro → inglés). Sólo ES/EN.
+    // NO se escribe `portfolio_lang` aquí: esa clave hace que la app trate sus
+    // preferencias locales como más recientes que las de la cuenta y, en un navegador
+    // nuevo, ignoraría también la moneda base guardada de una cuenta existente. La
+    // elección viaja en `sessionStorage` (`aurix_lang_choice`) y la app la adopta tras
+    // leer la cuenta, por su camino normal de preferencia explícita; la pista y el
+    // idioma del navegador (`aurix_lang_hint`) sólo rellenan el vacío.
+    const _LG_CHOICE_KEY = 'aurix_lang_choice', _LG_HINT_KEY = 'aurix_lang_hint';
+    function _lgNorm(v) { const b = String(v == null ? '' : v).trim().toLowerCase().split(/[-_]/)[0]; return (b === 'es' || b === 'en') ? b : null; }
+    let LOGIN_LANG = (function () {
+      try {
+        const q = new URLSearchParams(location.search);
+        const p = _lgNorm(q.get('lang'));
+        if (p) { try { sessionStorage.setItem(_LG_CHOICE_KEY, p); } catch (_) {} return p; }
+        let c = null; try { c = _lgNorm(sessionStorage.getItem(_LG_CHOICE_KEY)); } catch (_) {}
+        if (c) return c;
+        const s = _lgNorm(localStorage.getItem('portfolio_lang'));
+        if (s) return s;
+        const h = _lgNorm(q.get('langhint')) || _lgNorm(navigator.language) || 'en';
+        const r = (h === 'es') ? 'es' : 'en';
+        try { sessionStorage.setItem(_LG_HINT_KEY, r); } catch (_) {}
+        return r;
+      } catch (_) {}
+      return 'es';
+    })();
+    document.documentElement.lang = LOGIN_LANG;
+    const LOGIN_I18N = {
+      es: {
+        'lg.title': 'AURIX — Acceso',
+        'lg.access': 'Acceso privado',
+        'lg.hint': 'Aurix se encuentra actualmente en beta privada. Introduce tu código de invitación para continuar.',
+        'lg.publicAccess': 'Bienvenido a Aurix',
+        'lg.publicHint': 'Todo tu patrimonio, en una sola visión. Entra o crea tu cuenta con tu correo: te enviaremos un código, sin contraseñas.',
+        'lg.invitePh': 'Código de invitación',
+        'lg.signin': 'Tu correo electrónico',
+        'lg.otpTitle': 'Introduce tu código',
+        'lg.emailPh': 'correo electrónico',
+        'lg.sendCode': 'Enviar código de acceso',
+        'lg.verify': 'Verificar código',
+        'lg.otpHint': 'Te hemos enviado un código de acceso a:',
+        'lg.resend': 'Reenviar código',
+        'lg.otherEmail': 'Usar otro email',
+        'lg.privateBeta': 'Beta privada',
+        'lg.err.email': 'Introduce un email válido',
+        'lg.err.otpFormat': 'Introduce un código válido (6-8 dígitos).',
+        'lg.err.rate': 'Demasiados intentos. Espera unos segundos.',
+        'lg.err.otp-invalid': 'Código incorrecto o caducado.',
+        'lg.err.network': 'No se pudo conectar. Revisa tu conexión.',
+        'lg.err.generic': 'No se pudo completar la operación. Inténtalo de nuevo.',
+        'lg.err.persist': 'No hemos podido preparar tu acceso. Inténtalo de nuevo en unos segundos.',
+        'lg.btn.sending': 'Enviando código...',
+        'lg.btn.verifying': 'Verificando...',
+        'lg.btn.resending': 'Reenviando...',
+        'lg.otp.resent': 'Nuevo código enviado. Revisa tu email.',
+        'lg.cooldown': 'Demasiados intentos. Espera {n}s',
+        'lg.resendIn': 'Reenviar en {n}s',
+        'lg.emb.title': 'Continúa en tu navegador',
+        'lg.emb.text': 'Abre Aurix en Safari o Chrome para mantener tu sesión iniciada y acceder más fácilmente la próxima vez.',
+        'lg.emb.cta': 'Abrir en el navegador',
+        'lg.emb.copy': 'Copiar enlace',
+        'lg.emb.copied': 'Enlace copiado',
+        'lg.emb.micro': 'Solo tendrás que iniciar sesión una vez en ese navegador.',
+        'lg.emb.manual': 'Pulsa ⋯ (o el icono de Safari) y elige «Abrir en Safari». También puedes copiar el enlace y pegarlo en Safari.',
+        'lg.emb.manual_android': 'Pulsa ⋮ y selecciona «Abrir en el navegador».'
+      },
+      en: {
+        'lg.title': 'AURIX — Access',
+        'lg.access': 'Private access',
+        'lg.hint': 'Aurix is currently in private beta. Enter your invitation code to continue.',
+        'lg.publicAccess': 'Welcome to Aurix',
+        'lg.publicHint': 'All your wealth, in one view. Sign in or create your account with your email: we will send you a code, no passwords.',
+        'lg.invitePh': 'Invitation code',
+        'lg.signin': 'Your email address',
+        'lg.otpTitle': 'Enter your code',
+        'lg.emailPh': 'email address',
+        'lg.sendCode': 'Send access code',
+        'lg.verify': 'Verify code',
+        'lg.otpHint': 'We sent an access code to:',
+        'lg.resend': 'Resend code',
+        'lg.otherEmail': 'Use another email',
+        'lg.privateBeta': 'Private Beta',
+        'lg.err.email': 'Enter a valid email',
+        'lg.err.otpFormat': 'Enter a valid code (6–8 digits).',
+        'lg.err.rate': 'Too many attempts. Please wait a few seconds.',
+        'lg.err.otp-invalid': 'Incorrect or expired code.',
+        'lg.err.network': 'Could not connect. Check your connection.',
+        'lg.err.generic': 'Something went wrong. Please try again.',
+        'lg.err.persist': 'We couldn’t prepare your access. Please try again in a few seconds.',
+        'lg.btn.sending': 'Sending code…',
+        'lg.btn.verifying': 'Verifying…',
+        'lg.btn.resending': 'Resending…',
+        'lg.otp.resent': 'New code sent. Check your email.',
+        'lg.cooldown': 'Too many attempts. Wait {n}s',
+        'lg.resendIn': 'Resend in {n}s',
+        'lg.emb.title': 'Continue in your browser',
+        'lg.emb.text': 'Open Aurix in Safari or Chrome to keep your session active and access it more easily next time.',
+        'lg.emb.cta': 'Open in browser',
+        'lg.emb.copy': 'Copy link',
+        'lg.emb.copied': 'Link copied',
+        'lg.emb.micro': 'You will only need to sign in once in that browser.',
+        'lg.emb.manual': 'Tap ⋯ (or the Safari icon) and choose “Open in Safari”. You can also copy the link and paste it into Safari.',
+        'lg.emb.manual_android': 'Tap ⋮ and choose “Open in browser”.'
+      }
+    };
+    function tL(k) { return (LOGIN_I18N[LOGIN_LANG] && LOGIN_I18N[LOGIN_LANG][k]) || LOGIN_I18N.es[k] || ''; }
+    // Cambiar de idioma SIN recargar: los textos fijos se repintan por `data-i18n` y los
+    // que el script escribió (errores, estados de botón, cuenta atrás) se traducen
+    // buscando qué clave del idioma anterior los produjo. Ningún campo se borra, no se
+    // reenvía nada y los plazos siguen corriendo: sólo cambia el texto.
+    function _lgReverse(text, from) {
+      const dict = LOGIN_I18N[from] || {}; const tx = String(text || '').trim(); if (!tx) return null;
+      for (const k in dict) {
+        const v = dict[k]; if (typeof v !== 'string') continue;
+        if (v.trim() === tx) return { k: k };
+        if (v.indexOf('{n}') >= 0) {
+          const re = new RegExp('^' + v.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('\\{n\\}', '(\\d+)') + '$');
+          const m = re.exec(tx); if (m) return { k: k, n: m[1] };
+        }
+      }
+      return null;
+    }
+    // `explicit`: sólo una pulsación del usuario (o `?lang=`) es una ELECCIÓN. Pintar el
+    // idioma deducido (preferencia, pista o navegador) no puede guardarse como elección:
+    // la app la adoptaría en la cuenta y eso sería alterarla en silencio.
+    function setLoginLang(next, explicit) {
+      const to = _lgNorm(next); if (!to) return;
+      if (explicit) { try { sessionStorage.setItem(_LG_CHOICE_KEY, to); } catch (_) {} }
+      if (to !== LOGIN_LANG) {
+        const from = LOGIN_LANG;
+        const dyn = ['auth-error', 'otp-error', 'auth-submit', 'otp-submit', 'otp-resend'].map(id => document.getElementById(id)).filter(Boolean)
+          .map(el => ({ el: el, hit: el.hasAttribute('data-i18n') ? null : _lgReverse(el.innerText, from) }));
+        LOGIN_LANG = to;
+        document.documentElement.lang = to;
+        applyLoginI18n();
+        dyn.forEach(d => { if (d.hit) { const v = tL(d.hit.k); d.el.innerText = d.hit.n != null ? v.replace('{n}', d.hit.n) : v; } });
+      }
+      document.querySelectorAll('[data-lg-lang]').forEach(b => { const on = b.getAttribute('data-lg-lang') === LOGIN_LANG; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      try { window.dispatchEvent(new CustomEvent('aurix:login-lang', { detail: { lang: LOGIN_LANG } })); } catch (_) {}
+    }
+    document.addEventListener('click', function (e) {
+      const b = e.target && e.target.closest && e.target.closest('[data-lg-lang]');
+      if (b) { e.preventDefault(); setLoginLang(b.getAttribute('data-lg-lang'), true); }
+    });
+    function applyLoginI18n() {
+      const tt = tL('lg.title'); if (tt) document.title = tt;
+      document.querySelectorAll('[data-i18n]').forEach(function (n) {
+        const v = tL(n.getAttribute('data-i18n')); if (v) n.textContent = v;
+      });
+      document.querySelectorAll('[data-i18n-ph]').forEach(function (n) {
+        const v = tL(n.getAttribute('data-i18n-ph')); if (v) n.setAttribute('placeholder', v);
+      });
+    }
+    applyLoginI18n();
+    setLoginLang(LOGIN_LANG);
+
+    const _SAFE_REDIRECT_TARGETS = new Set([
+      'index.html',
+      'login.html',
+      'reset.html',
+      'reset-password.html',
+    ]);
+    // P0-ROUTING-LOOP-BREAKER (mirror of app.js safeRedirect) — a shared sessionStorage redirect log
+    // stops an index⇄login ping-pong from flickering forever. Returns true if the nav was issued.
+    var _AURIX_REDIRECT_MAX = 3, _AURIX_REDIRECT_WINDOW_MS = 10000;
+    // SPEC ANDROID-AUTH-REDIRECT-LOOP — storage-INDEPENDENT bound (mirror of app.js). A ?_arl=N bounce
+    // counter carried in the URL survives navigation even when sessionStorage is defeated (Android
+    // in-app WebView / partitioned context), so the loop is bounded without relying on storage.
+    var _AURIX_REDIRECT_URL_PARAM = '_arl', _AURIX_REDIRECT_URL_MAX = 5;
+    function _loginReadUrlBounce() {
+      try { var n = parseInt(new URLSearchParams(window.location.search).get(_AURIX_REDIRECT_URL_PARAM) || '0', 10); return (isFinite(n) && n > 0) ? n : 0; } catch (_) { return 0; }
+    }
+    function _loginStorageUsable() {
+      try { if (typeof window.__AURIX_STORAGE_OK === 'boolean') return window.__AURIX_STORAGE_OK; } catch (_) {}
+      var ok = false;
+      try { var k = '__aurix_probe__'; sessionStorage.setItem(k, '1'); ok = sessionStorage.getItem(k) === '1'; sessionStorage.removeItem(k); } catch (_) { ok = false; }
+      try { window.__AURIX_STORAGE_OK = ok; } catch (_) {}
+      return ok;
+    }
+    // Stable notice when the loop is broken from the login side — stop redirecting, tell the user
+    // storage may be blocked. login.html IS the recovery screen, so no navigation is issued.
+    function _loginShowStorageNotice() {
+      try {
+        if (document.getElementById('aurixLoginStorageNotice')) return;
+        var storageOk = _loginStorageUsable();
+        var d = document.createElement('div');
+        d.id = 'aurixLoginStorageNotice';
+        d.setAttribute('role', 'alert');
+        d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483646;background:#0c1426;border-top:1px solid #1c2b49;color:#c3cee2;font:13px/1.5 -apple-system,system-ui,sans-serif;padding:14px 16px calc(14px + env(safe-area-inset-bottom));text-align:center';
+        d.textContent = storageOk
+          ? 'No pudimos completar el inicio de sesión. Inténtalo de nuevo.'
+          : 'Tu navegador está bloqueando el almacenamiento local. Abre Aurix directamente en Chrome o Safari para iniciar sesión.';
+        document.addEventListener('DOMContentLoaded', function () { try { document.body.appendChild(d); } catch (_) {} });
+        try { if (document.body) document.body.appendChild(d); } catch (_) {}
+      } catch (_) {}
+    }
+    function safeRedirect(path, source) {
+      const target  = _SAFE_REDIRECT_TARGETS.has(path) ? path : 'login.html';
+      var urlBounce = _loginReadUrlBounce(), nextBounce = urlBounce + 1, logLen = 0;
+      try {
+        const now = Date.now();
+        let log = [];
+        try { log = JSON.parse(sessionStorage.getItem('aurix_redirect_log') || '[]'); } catch (_) { log = []; }
+        if (!Array.isArray(log)) log = [];
+        log = log.filter(function (e) { return e && (now - e.ts) < _AURIX_REDIRECT_WINDOW_MS; });
+        logLen = log.length;
+        if (logLen < _AURIX_REDIRECT_MAX) {
+          log.push({ ts: now, target: target, from: window.location.pathname, source: source || null });
+          try { sessionStorage.setItem('aurix_redirect_log', JSON.stringify(log)); } catch (_) {}
+          try { sessionStorage.setItem('aurix_last_redirect', JSON.stringify({ target: target, source: source || null, ts: now })); } catch (_) {}
+        }
+      } catch (_) {}
+      if (logLen >= _AURIX_REDIRECT_MAX || nextBounce > _AURIX_REDIRECT_URL_MAX) {
+        try { sessionStorage.setItem('aurix_redirect_broken', JSON.stringify({ at: Date.now(), target: target, source: source || null, bounces: logLen, urlBounce: urlBounce })); } catch (_) {}
+        try { window.__AURIX_REDIRECT_LOOP_BROKEN = { target: target, source: source || null, urlBounce: urlBounce, logLen: logLen }; } catch (_) {}
+        try { console.warn('[AUTH][REDIRECT-LOOP-BREAK] login suppressed →' + target + ' (log=' + logLen + ', urlBounce=' + urlBounce + ')'); } catch (_) {}
+        try { _loginShowStorageNotice(); } catch (_) {}
+        return false;
+      }
+      const onAurix = window.location.pathname.startsWith('/aurix-demo/v805/');
+      const base    = window.location.origin + (onAurix ? '/aurix-demo/v805/' : '/');
+      var sep = target.indexOf('?') >= 0 ? '&' : '?';
+      window.location.href = base + target + sep + _AURIX_REDIRECT_URL_PARAM + '=' + nextBounce;
+      return true;
+    }
+
+    // SPEC AUTH.MOBILE.OTP.E2E.02 (Fase 4) — SINGLE NAVIGATION OWNER. When an OTP verify is in
+    // progress, the verify handler owns the post-auth navigation (it confirms the session first).
+    // These load-time listeners must NOT also fire a competing redirect for that same SIGNED_IN, or
+    // two navigations race into the redirect-loop breaker. They still handle the returning-user case
+    // (already-signed-in on page load) where no verify is running.
+    // ══════════════════════════════════════════════════════════════════════════
+    // SPEC AUTH-CONTINUITY · IN-APP BROWSER CONVERSION
+    // ══════════════════════════════════════════════════════════════════════════
+    // El problema NO es un bug de persistencia: `persistSession`/`autoRefreshToken`
+    // ya funcionan y la sesión sobrevive en su navegador. Es que el navegador
+    // interno de X/Telegram/Instagram es un CONTENEDOR DE ALMACENAMIENTO AISLADO:
+    // el OTP que el usuario gasta ahí crea una sesión que Safari nunca verá, así
+    // que al volver por Safari se le vuelve a pedir. Se evita gastar ese OTP en un
+    // contenedor desechable y se le lleva a su navegador real.
+    //
+    // FAIL OPEN, deliberadamente: sólo se intercepta lo que se reconoce con alta
+    // confianza. Un falso positivo que bloquease Safari/Chrome sería mucho peor
+    // que dejar pasar una WebView desconocida, así que la lista es corta y
+    // explícita y CUALQUIER duda deja el login normal intacto.
+    function detectEmbeddedBrowser() {
+      try {
+        var ua = String(navigator.userAgent || '');
+        // Señales propietarias inequívocas de los navegadores internos conocidos.
+        //   FBAN/FBAV/FB_IAB → Facebook · Instagram → Instagram · Line → LINE
+        //   Twitter          → X/Twitter  · TikTok/musical_ly → TikTok
+        // Telegram no se anuncia en el UA en iOS: se detecta por su WebView de
+        // Android (TelegramWebview / TGWebView...) y, en iOS, NO se detecta — y
+        // eso es correcto por diseño: preferimos no interceptar antes que
+        // interceptar mal.
+        if (/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Line\/|TikTok|musical_ly|TelegramWebview|TGWebView|Twitter/i.test(ua)) return true;
+        return false;
+      } catch (_) { return false; }        // ante cualquier error: login normal
+    }
+    // Destino canónico: la MISMA app, sin un solo secreto en la URL. `source` es
+    // informativo (copy/diagnóstico) y NO concede acceso alguno.
+    function _embTargetUrl() {
+      try {
+        var base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'index.html';
+        return base + '?source=external-browser&lang=' + (LOGIN_LANG === 'en' ? 'en' : 'es');
+      } catch (_) { return 'https://aurix-production.invalid/'; }
+    }
+    function showEmbeddedInterstitial() {
+      var emb = document.getElementById('embeddedSection');
+      if (!emb) return false;
+      // Se OCULTA la intención de autenticarse, no el producto: la landing pública
+      // sigue siendo visible y este interstitial vive sólo en la ruta de acceso.
+      ['authSection', 'otpSection'].forEach(function (id) {
+        var n = document.getElementById(id); if (n) n.style.display = 'none';
+      });
+      var inv = document.querySelector('.invite-section'); if (inv) inv.style.display = 'none';
+      var hint = document.querySelector('.beta-hint:not([data-i18n="lg.emb.text"])'); if (hint) hint.style.display = 'none';
+      emb.style.display = '';
+      // FUERA DE ANDROID NO HAY SALIDA PROGRAMÁTICA: en iOS `window.open` vuelve a abrir Aurix
+      // DENTRO del mismo navegador de la app (el mismo bloqueo). Así que no se ofrece ese botón:
+      // la acción principal es copiar el enlace y la instrucción para abrirlo en Safari se ve
+      // desde el principio. Android conserva su salida real (`intent://`).
+      if (!/Android/i.test(String(navigator.userAgent || ''))) {
+        var _o = document.getElementById('embOpen'), _c = document.getElementById('embCopy'), _m = document.getElementById('embManual');
+        if (_o) _o.style.display = 'none';
+        if (_c) _c.className = 'auth-btn';
+        if (_m) _m.style.display = '';
+      }
+      _authTrace('embedded_browser_detected', { uaEmbedded: true });
+      return true;
+    }
+    (function _wireEmbeddedInterstitial() {
+      var open = document.getElementById('embOpen'), copy = document.getElementById('embCopy');
+      if (open) open.addEventListener('click', function () {
+        _authTrace('external_browser_open_attempted', {});
+        var url = _embTargetUrl();
+        // La MEJOR navegación HTTPS legítima disponible desde una interacción
+        // explícita. NO se promete que iOS abandone la WebView: no hay API para
+        // forzar Safari, así que la instrucción manual se revela siempre tras el
+        // intento en vez de fingir que funcionó.
+        // ANDROID SÍ TIENE SALIDA: un `intent://` con `scheme=https` lo resuelve el
+        // sistema, no la WebView, y abre el navegador por defecto (o el selector).
+        // Antes sólo se hacía `window.open`, que dentro de la WebView de X vuelve a
+        // cargar la app EN LA MISMA WebView → login → este mismo interstitial: el
+        // bucle. `browser_fallback_url` mantiene el destino si no hay quien lo abra.
+        // iOS no tiene equivalente: ahí sigue el intento HTTPS + la instrucción manual.
+        var isAndroid = /Android/i.test(String(navigator.userAgent || ''));
+        if (isAndroid) {
+          try {
+            var u = new URL(url);
+            // `location.assign` y no asignar la propiedad href: el verificador fail-closed
+            // del sitio (aurix-build-site.mjs) lee esa asignación como referencia LOCAL.
+            location.assign('intent://' + u.host + u.pathname + u.search
+              + '#Intent;scheme=https;S.browser_fallback_url=' + encodeURIComponent(url) + ';end');
+          } catch (_) { try { window.open(url, '_blank', 'noopener'); } catch (_) {} }
+        } else {
+          try { window.open(url, '_blank', 'noopener'); } catch (_) {}
+        }
+        var man = document.getElementById('embManual');
+        if (man) { if (isAndroid) man.textContent = tL('lg.emb.manual_android') || man.textContent; man.style.display = ''; }
+      });
+      if (copy) copy.addEventListener('click', function () {
+        var url = _embTargetUrl();
+        var done = function () {
+          _authTrace('external_browser_link_copied', {});
+          copy.textContent = tL('lg.emb.copied') || 'Copiado';
+        };
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(done, function () {});
+            return;
+          }
+        } catch (_) {}
+        try {   // fallback sin dependencias para WebViews sin Clipboard API
+          var ta = document.createElement('textarea');
+          ta.value = url; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          done();
+        } catch (_) {}
+      });
+    })();
+    // Se evalúa ANTES de resolver la sesión, para que dentro de una WebView no haya
+    // ninguna ventana en la que el usuario pueda gastar un OTP. Si resulta que YA
+    // tenía sesión en esa WebView, el `getSession` de abajo redirige igual: ese
+    // camino no depende del DOM, así que los usuarios existentes no se rompen.
+    var _isEmbedded = detectEmbeddedBrowser();
+    if (_isEmbedded) { try { showEmbeddedInterstitial(); } catch (_) {} }
+
+    var _otpVerifyNavInProgress = false;
+    if (client) {
+      client.auth.getSession().then(({ data: { session } }) => {
+        if (session && !_otpVerifyNavInProgress) { _authTrace('login:already-signed-in', { sessionPresent: true }); safeRedirect('index.html', 'login:getSession'); }
+        else if (!session) { _authTrace(_isEmbedded ? 'embedded_browser_enter_clicked' : 'auth_login_required', { embedded: _isEmbedded }); }
+      });
+
+      client.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session && !_otpVerifyNavInProgress) safeRedirect('index.html', 'login:SIGNED_IN');
+      });
+    }
+
+    // ── Public launch (SPEC LANZAMIENTO 1) — SINGLE SOURCE OF TRUTH for the app
+    //    OTP gate. KEEP IN SYNC with landing/app.js. Fixed UTC (never deploy-time
+    //    / localStorage). 2026-07-23T17:00:00.000Z === Thu 23 Jul 2026 19:00
+    //    Europe/Madrid. Rollback: PUBLIC_LAUNCH_ENABLED = false. Before launch
+    //    the private invite gate is UNCHANGED (owner/testers/whitelist unaffected);
+    //    after launch, email/OTP opens to everyone (no invite required).
+    const PUBLIC_LAUNCH_ENABLED = true;
+    const PUBLIC_LAUNCH_AT       = '2026-07-23T17:00:00.000Z';
+    const PUBLIC_LAUNCH_AT_MS    = Date.parse(PUBLIC_LAUNCH_AT);
+    function isPublicLaunchOpen() { return PUBLIC_LAUNCH_ENABLED === true && Date.now() >= PUBLIC_LAUNCH_AT_MS; }
+
+    // ── DOM refs ───────────────────────────────────────────────
+    const inviteInput  = document.getElementById('inviteCode');
+    const authSection  = document.getElementById('authSection');
+    const inviteCheck  = document.getElementById('inviteCheck');
+    const emailEl      = document.getElementById('email');
+    const submitBtn    = document.getElementById('auth-submit');
+    const errorEl      = document.getElementById('auth-error');
+    const otpSection   = document.getElementById('otpSection');
+    const otpCodeEl    = document.getElementById('otp-code');
+    const otpSubmitBtn = document.getElementById('otp-submit');
+    const otpErrorEl   = document.getElementById('otp-error');
+    const otpBackEl    = document.getElementById('otp-back');
+    const otpResendEl  = document.getElementById('otp-resend');
+
+    // EMAIL-VALIDATE-1: basic syntactic check before issuing an OTP
+    // request. Stricter than `includes('@')` (which let "a@", "@b",
+    // "test domain@x" through) but intentionally NOT full RFC 5322 —
+    // the OTP send itself is the authoritative validator. Trims first
+    // so trailing spaces from autofill / paste do not block valid
+    // addresses. Returns false for null / undefined / non-string.
+    // EMAIL-DOMAIN-VALIDATION-1 — the old domain half was `[^\s@]+\.[^\s@]+`, which accepted any
+    // junk without a space: "gmail..com" reached the database that way (one real row, one hard
+    // bounce on the launch campaign). The domain is now checked label by label — each label must
+    // start and end alphanumeric, no empty labels (double dot), no leading/trailing dot, and a
+    // TLD of 2+ letters. The LOCAL part is deliberately left as permissive as before, so nothing
+    // that used to work stops working: subdomains, +tags, hyphens and punycode all still pass.
+    function _isValidEmail(raw) {
+      if (typeof raw !== 'string') return false;
+      const s = raw.trim();
+      return /^[^\s@]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/.test(s);
+    }
+
+    // OTP-RESEND-1: friendly Spanish messages for the auth surfaces.
+    // We never show raw Supabase error text to the user — every error
+    // is classified into one of the known buckets below. Generic stays
+    // as the safe fallback so a future SDK error string never leaks.
+    function authErr(cls) { return tL('lg.err.' + cls) || tL('lg.err.generic'); }
+    function _classifyAuthError(err) {
+      const msg    = ((err && (err.message || err.error_description)) || '').toLowerCase();
+      const status = (err && (err.status || err.statusCode)) || 0;
+      if (status === 429 || msg.includes('rate') || msg.includes('too many') || msg.includes('throttle')) return 'rate';
+      if (msg.includes('expired') || msg.includes('invalid') || msg.includes('token') || msg.includes('otp')) return 'otp-invalid';
+      if (msg.includes('fetch') || msg.includes('network') || msg.includes('offline')) return 'network';
+      return 'generic';
+    }
+    function _authErrorText(err) {
+      return authErr(_classifyAuthError(err));
+    }
+    // SPEC AUTH.OTP.NEW-ACCOUNT.FAILURE.AUDIT.08 — distinguish a SERVER-SIDE auth failure (HTTP 5xx /
+    // "unexpected_failure" / "database error saving new user") from a wrong/expired OTP. Only a NEW
+    // account's verify also CREATES the user server-side, so these failures hit new accounts and never
+    // an already-created account like rbn892. Used so a new user is NEVER told "código incorrecto"
+    // when the backend actually failed to complete their sign-up. Never fabricates a class for a plain
+    // 4xx wrong/expired code (those stay 'otp-invalid').
+    function _isBackendAuthFailure(err) {
+      const msg    = ((err && (err.message || err.error_description)) || '').toLowerCase();
+      const status = (err && (err.status || err.statusCode)) || 0;
+      if (status >= 500) return true;
+      return /unexpected_failure|database error|saving new user|internal server error/.test(msg);
+    }
+
+    // SPEC AUTH.OTP.DIAGNOSE.01 (CASO A) — the Supabase auth fetch has no built-in
+    // timeout, so a stalled request (network blip / slow Auth backend) left the
+    // "Enviar código" spinner spinning forever and the OTP step never appeared.
+    // Race every auth call against a timeout that rejects with a 'network'-class
+    // error, so the loading state ALWAYS resolves and the user sees an actionable
+    // message instead of an infinite spinner. Purely a resiliency wrapper — it does
+    // not change the request itself.
+    const _AUTH_TIMEOUT_MS = 15000;
+    function _authWithTimeout(promise, ms) {
+      let timer = null;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('network timeout')), ms || _AUTH_TIMEOUT_MS);
+      });
+      return Promise.race([promise, timeout]).finally(() => { if (timer) clearTimeout(timer); });
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // HOTFIX P0 — GUARANTEED EMAIL CAPTURE (persist BEFORE OTP) · single shared owner
+    // ════════════════════════════════════════════════════════════════════════
+    // Every valid email entered to access Aurix must be saved IMMEDIATELY into the historical email table
+    // (public.waitlist — the card the owner now sees as "correos usuario") BEFORE any OTP is requested, so
+    // the address is never lost if the user abandons, the OTP fails/expires/is wrong, or verification never
+    // happens. This is the ONE owner called by BOTH the email-submit and the resend paths — no duplicated
+    // insert logic. It writes via the public persist_access_email SECURITY DEFINER RPC
+    // (db/access_email_persist_1.sql) — never a privileged server key, never a client insert (waitlist RLS
+    // denies anon). Idempotent: an existing email is preserved untouched (no duplicate, no flag/status/
+    // permission change) and the RPC returns nothing either way, so it never reveals whether an address
+    // already existed. Returns true ONLY on confirmed persistence; on any failure the caller must NOT send
+    // the OTP (CASO C). Never throws; never surfaces a table name / SQL / RLS detail to the user.
+    async function persistAccessEmail(normalizedEmail, source) {
+      if (!client || !_isValidEmail(normalizedEmail)) return false;
+      try {
+        const { error } = await _authWithTimeout(
+          client.rpc('persist_access_email', { p_email: normalizedEmail, p_source: source || 'login-otp' })
+        );
+        if (error) { _reportLoginSafe('persist-access-email', error.message || 'rpc error', ''); return false; }
+        return true;
+      } catch (e) {
+        _reportLoginSafe('persist-access-email', (e && e.message) || 'network', '');
+        return false;
+      }
+    }
+
+    // ── Invite gate ────────────────────────────────────────────
+    // SUPABASE-RLS-CLIENT-MIGRATION: invite_codes is now RLS-locked away
+    // from anon/authenticated. The validate_invite_code SECURITY DEFINER
+    // RPC is the only client-callable surface and returns just a boolean,
+    // so no row data (owner, used_count, max_uses…) leaks to the browser.
+    async function validateInvite(code) {
+      if (!client || !code) return { valid: false };
+      try {
+        const { data, error } = await client.rpc(
+          'validate_invite_code',
+          { p_code: code }
+        );
+        if (error) {
+          // Network / RPC error — surface to callers/devtools while
+          // keeping the same locked-UX as an invalid code.
+          _reportLoginSafe('invite-rpc', error.message || 'rpc error', '');
+          return { valid: false, error: error.message || 'network' };
+        }
+        return { valid: data === true };
+      } catch (e) {
+        _reportLoginSafe('invite-rpc', (e && e.message) || 'network', (e && e.stack) || '');
+        return { valid: false, error: (e && e.message) ? e.message : 'network' };
+      }
+    }
+
+    // INVITE-DEBOUNCE-1: the previous handler fired validate_invite_code
+    // on every keystroke (7 RPCs to validate "AURIX24"). Debounce 250 ms
+    // after the last edit and skip codes shorter than the minimum length
+    // so the RPC only runs when the user has actually stopped typing a
+    // plausible code. _inviteSeq + a re-check against the current input
+    // value protect against a stale older RPC resolving after a newer
+    // one and mis-unlocking the auth section.
+    let _inviteTimer = null;
+    let _inviteSeq   = 0;
+    const INVITE_MIN_LEN = 3;
+    inviteInput.addEventListener('input', () => {
+      clearTimeout(_inviteTimer);
+      const code = inviteInput.value.trim().toUpperCase();
+      if (code.length < INVITE_MIN_LEN) {
+        // Below the minimum length we never call the RPC; explicitly
+        // re-lock so a prior unlock state from a longer string can't
+        // linger after a delete.
+        _inviteValidated = false;
+        lockAuth();
+        return;
+      }
+      _inviteTimer = setTimeout(async () => {
+        const myCode = code;
+        const seq    = ++_inviteSeq;
+        _authTrace('invite:start', {});
+        const result = await validateInvite(myCode);
+        // Race guard: ignore responses from older keystrokes and also
+        // verify the user hasn't edited the input mid-flight.
+        if (seq !== _inviteSeq) return;
+        if (myCode !== inviteInput.value.trim().toUpperCase()) return;
+        if (result.valid) { _inviteValidated = true; _authTrace('invite:ok', { valid: true }); unlockAuth(); }
+        else              { _inviteValidated = false; _authTrace('invite:invalid', { valid: false, errorName: result.error || null }); lockAuth(); }
+      }, 250);
+    });
+
+    // ── State ──────────────────────────────────────────────────
+    let otpStep        = false;
+    let isSubmitting   = false;
+    let cooldown       = false;
+    let retryCount     = 0;
+    let _cooldownTimer = null;
+
+    // ── Auth lock / unlock ─────────────────────────────────────
+    // ADMISIÓN a la beta privada, en ESTADO y no en el DOM. El guard previo al envío del OTP
+    // miraba `authSection.classList.contains('locked')`, así que cuando el markup dejó de
+    // servirse bloqueado ese guard pasó a depender de que `lockAuth()` llegara a ejecutarse.
+    // Un fallo suyo —excepción tragada, extensión, CSP— habría permitido `signInWithOtp` con
+    // `shouldCreateUser: true` y por tanto crear cuenta SIN invitación antes del lanzamiento.
+    // No es una fuga de sesión (el código va al buzón del propio solicitante), pero sí una
+    // pérdida del control de ADMISIÓN, y ese control no puede vivir en una clase CSS.
+    let _inviteValidated = false;
+    function lockAuth() {
+      emailEl.disabled   = true;
+      submitBtn.disabled = true;
+      authSection.classList.remove('unlocked');
+      authSection.classList.add('locked');
+      inviteCheck.classList.remove('visible');
+    }
+
+    function unlockAuth() {
+      emailEl.disabled = false;
+      authSection.classList.remove('locked');
+      authSection.classList.add('unlocked');
+      inviteCheck.classList.add('visible');
+      emailEl.focus();
+      updateSubmitState();
+    }
+
+    // ── OTP step transitions ───────────────────────────────────
+    function showOtpStep() {
+      otpStep = true;
+      authSection.style.display = 'none';
+      otpSection.style.display  = 'flex';
+      // F (LR.3): show the destination email so a typo is caught before the
+      // user waits for a code that will never arrive. textContent avoids any
+      // markup injection from the address. Falls back to the email field.
+      const _destEl = document.getElementById('otpDestEmail');
+      if (_destEl) {
+        _destEl.textContent =
+          (localStorage.getItem('aurix_otp_email') || (emailEl && emailEl.value.trim()) || '');
+      }
+      otpCodeEl.value            = '';
+      otpErrorEl.innerText       = '';
+      otpSubmitBtn.disabled      = true;
+      otpSubmitBtn.innerText     = tL('lg.verify');
+      otpCodeEl.focus();
+    }
+
+    function showEmailStep() {
+      otpStep = false;
+      otpSection.style.display  = 'none';
+      authSection.style.display = '';
+      authSection.classList.remove('locked');
+      authSection.classList.add('unlocked');
+      emailEl.disabled     = false;
+      localStorage.removeItem('aurix_otp_email');
+      otpErrorEl.innerText = '';
+      otpCodeEl.value      = '';
+      updateSubmitState();
+      emailEl.focus();
+    }
+
+    // ── Init ───────────────────────────────────────────────────
+    const savedEmail = localStorage.getItem('last_email');
+    if (savedEmail) emailEl.value = savedEmail;
+
+    emailEl.addEventListener('input', updateSubmitState);
+    emailEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitBtn.click();
+    });
+
+    // Aquí había un `lockAuth()` incondicional: era la inicialización «empezar cerrado» del
+    // diseño anterior, en el que el markup venía bloqueado y un script posterior lo abría. Con
+    // el markup ya abierto, esta llamada volvía a cerrar el formulario para TODOS —incluido un
+    // cliente con derecho a entrar— y `_applyPrivateBetaGate()`, que ahora sólo CIERRA, lo
+    // dejaba así. El estado inicial lo decide el markup; cerrar es responsabilidad exclusiva
+    // de `_applyPrivateBetaGate()`, y sólo antes del lanzamiento público.
+    updateSubmitState();
+
+    // SPEC LANZAMIENTO 1 — public launch access. After PUBLIC_LAUNCH_AT the email
+    // step opens for EVERYONE (no invite); the private-beta invite UI is hidden and
+    // the copy switches to the public flow. Before launch this is a no-op, so the
+    // invite gate (owner / testers / whitelist) stays byte-identical. Re-checked on
+    // visibility/focus so a device suspended across the launch instant converges —
+    // no reload, no new deploy. The OTP send/verify + profile flow are unchanged.
+    // INVERTIDA (M.06 · identity). Antes esta función ABRÍA el formulario y el markup lo servía
+    // cerrado, así que su fallo dejaba fuera a un cliente con derecho a entrar. Ahora el markup
+    // sirve abierto y esto sólo CIERRA cuando el lanzamiento público NO está abierto. El modo de
+    // fallo pasa de «denegación permanente» a «muro no aplicado», y eso no concede nada: el muro
+    // es client-only y la autorización real es el OTP del servidor.
+    function _applyPrivateBetaGate() {
+      if (isPublicLaunchOpen()) { try { updateSubmitState(); } catch (_) {} return; }
+      try { lockAuth(); } catch (_) {}
+      try {
+        const _inv = document.querySelector('.invite-section'); if (_inv) _inv.style.display = '';
+        const _lbl = document.querySelector('.beta-access-label'); if (_lbl) { _lbl.setAttribute('data-i18n', 'lg.access'); _lbl.textContent = tL('lg.access'); }
+        const _hint = document.querySelector('.beta-hint'); if (_hint) { _hint.setAttribute('data-i18n', 'lg.hint'); _hint.textContent = tL('lg.hint'); }
+      } catch (_) {}
+    }
+    _applyPrivateBetaGate();
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) _applyPrivateBetaGate(); });
+    window.addEventListener('focus', _applyPrivateBetaGate);
+
+    // ── Submit button state (single UI authority) ─────────────
+    function updateSubmitState() {
+      if (cooldown) {
+        submitBtn.disabled  = true;
+        submitBtn.innerText = tL('lg.sendCode');
+        return;
+      }
+      const validEmail = _isValidEmail(emailEl.value);
+      submitBtn.disabled  = !validEmail;
+      submitBtn.innerText = tL('lg.sendCode');
+    }
+
+    function clearTimer() {
+      if (_cooldownTimer !== null) {
+        clearInterval(_cooldownTimer);
+        _cooldownTimer = null;
+      }
+    }
+
+    function resetCooldownState() {
+      clearTimer();
+      cooldown = false;
+      retryCount = 0;
+      localStorage.removeItem('cooldown_until');
+      errorEl.innerText = '';
+      errorEl.style.color = 'var(--red)';
+      updateSubmitState();
+    }
+
+    function startCooldown(until) {
+      clearTimer();
+      cooldown = true;
+      updateSubmitState();
+
+      const tick = () => {
+        const remaining = Math.ceil((until - Date.now()) / 1000);
+        if (remaining <= 0) { resetCooldownState(); return; }
+        errorEl.style.color = 'orange';
+        errorEl.innerText = tL('lg.cooldown').replace('{n}', remaining);
+      };
+
+      tick();
+      _cooldownTimer = setInterval(tick, 1000);
+    }
+
+    function handleRateLimit() {
+      retryCount++;
+      const waitMs = retryCount === 1 ? 60000
+                   : retryCount === 2 ? 120000
+                   : 300000;
+      const until = Date.now() + waitMs;
+      localStorage.setItem('cooldown_until', until);
+      startCooldown(until);
+    }
+
+    function isRateLimitError(err) {
+      return (err?.message || '').toLowerCase().includes('rate');
+    }
+
+    // ── Email submit → send OTP ────────────────────────────────
+    submitBtn.onclick = async () => {
+      if (isSubmitting) return;
+      // SPEC LANZAMIENTO 1 — second gate (beyond the disabled field): before the
+      // public launch, an OTP may be sent ONLY from an authorized private session
+      // (a valid invite unlocked the email step). Public callers with no invite
+      // are blocked until PUBLIC_LAUNCH_AT — no OTP, no account creation. After
+      // launch the email step is unlocked for everyone so this passes.
+      // Antes del lanzamiento público sólo pasa quien haya validado su invitación contra el RPC.
+      // Se comprueba el ESTADO, no la clase del DOM (ver la nota de `_inviteValidated`).
+      if (!isPublicLaunchOpen() && !_inviteValidated) return;
+      isSubmitting = true;
+
+      try {
+        const email = emailEl.value.trim();
+        if (!_isValidEmail(email)) {
+          errorEl.style.color = 'var(--red)';
+          errorEl.innerText = tL('lg.err.email');
+          return;
+        }
+
+        // Reset backoff when user changes email
+        const lastEmail = localStorage.getItem('last_email');
+        if (email !== lastEmail) {
+          retryCount = 0;
+          localStorage.removeItem('cooldown_until');
+        }
+
+        errorEl.innerText = '';
+        window.setButtonBusy(submitBtn, true, tL('lg.btn.sending'));
+
+        // ── HOTFIX P0 — PERSIST BEFORE OTP ──────────────────────────────────────────
+        // Order (mandatory): validate → normalize → persist → confirm → signInWithOtp. Normalize (trim
+        // already applied above + lowercase) and SAVE the email to the historical table, CONFIRMING the
+        // write, BEFORE requesting the OTP. CASO C — if persistence is not confirmed we do NOT send the OTP,
+        // do NOT claim a code was sent: show a human retry message and keep the form usable (retry is
+        // idempotent). The busy spinner is always cleared by the finally below.
+        const normalizedEmail = email.toLowerCase();
+        const persisted = await persistAccessEmail(normalizedEmail, 'login-otp');
+        if (!persisted) {
+          errorEl.style.color = 'var(--red)';
+          errorEl.innerText   = tL('lg.err.persist');
+          updateSubmitState();
+          return;
+        }
+
+        console.log('OTP REQUEST FIRED');
+
+        // OTP-RESEND-1: catch thrown network failures so they route
+        // through the classifier instead of falling silently through
+        // try/finally. Supabase resolves auth errors as data; fetch
+        // failures throw, so we need both paths.
+        let sendErr = null;
+        _authTrace('email:send-start', {});
+        try {
+          // CASO A — bounded so a stalled request can never hang the spinner forever.
+          const { error } = await _authWithTimeout(client.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: true }
+          }));
+          sendErr = error || null;
+        } catch (e) {
+          sendErr = e;   // includes the timeout rejection above
+        }
+        _authTrace(sendErr ? 'email:send-error' : 'email:send-ok', { errorName: sendErr ? _classifyAuthError(sendErr) : null });
+
+        if (sendErr) {
+          console.log('[AUTH][otp-send] failed:', _classifyAuthError(sendErr));
+          if (isRateLimitError(sendErr) || _classifyAuthError(sendErr) === 'rate') {
+            handleRateLimit();
+            return;
+          }
+          _reportLoginSafe('otp-send', (sendErr.message || String(sendErr)), sendErr.stack || '');
+          errorEl.style.color = 'var(--red)';
+          errorEl.innerText   = _authErrorText(sendErr);
+          updateSubmitState();
+          return;
+        }
+
+        console.log('[AUTH][otp-send] ok → OTP step');
+        localStorage.setItem('aurix_otp_email', email);
+        localStorage.setItem('last_email', email);
+        resetCooldownState();
+        showOtpStep();
+
+      } finally {
+        isSubmitting = false;
+        // CASO A — loading MUST always close (success, error, or timeout). On success
+        // the auth section is already hidden by showOtpStep(), so clearing is harmless;
+        // on any failure/timeout it guarantees the spinner never sticks.
+        window.setButtonBusy(submitBtn, false);
+      }
+    };
+
+    // ── OTP input — enforce numeric, enable button at 6 digits ─
+    otpCodeEl.addEventListener('input', () => {
+      otpCodeEl.value = otpCodeEl.value.replace(/\D/g, '').slice(0, 8);
+      otpSubmitBtn.disabled = otpCodeEl.value.length < 6;
+    });
+
+    otpCodeEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') otpSubmitBtn.click();
+    });
+
+    // ── OTP submit → verify code ───────────────────────────────
+    let isVerifying = false;
+    otpSubmitBtn.addEventListener('click', async () => {
+      if (isVerifying) return;
+      isVerifying = true;
+
+      try {
+        const email = localStorage.getItem('aurix_otp_email');
+        const code  = otpCodeEl.value.trim();
+
+        if (!email) { showEmailStep(); return; }
+
+        if (!/^\d{6,8}$/.test(code)) {
+          otpErrorEl.style.color = 'var(--red)';
+          otpErrorEl.innerText   = tL('lg.err.otpFormat');
+          return;
+        }
+
+        // SPEC AUTH.DESKTOP.OTP.WEB-ONLY.FAILURE.01 (Phase 3) — if browser storage is unavailable
+        // (private mode / blocked cookies / extension), verifyOtp cannot persist a session, so the app
+        // could never confirm one. Fail fast with a visible, actionable error — never an infinite spinner.
+        if (!_storageAvailable()) {
+          _authTrace('otp:storage-unavailable', { sessionPresent: false });
+          otpErrorEl.style.color = 'var(--red)';
+          otpErrorEl.innerText = authErr('generic');
+          return;
+        }
+
+        otpErrorEl.innerText = '';
+        window.setButtonBusy(otpSubmitBtn, true, tL('lg.btn.verifying'));
+        _otpVerifyNavInProgress = true;   // Fase 4 — this handler owns the post-OTP navigation
+        _authTrace('otp:verify-start', {});
+
+        let verifyErr = null, otpData = null;
+        try {
+          // CASO B — bounded like the send path so a stalled verify can't hang the spinner.
+          const { data, error } = await _authWithTimeout(client.auth.verifyOtp({
+            email,
+            token: code,
+            type: 'email'
+          }));
+          verifyErr = error || null; otpData = data || null;
+        } catch (e) {
+          // OTP-RESEND-1: a thrown fetch error (offline / DNS) is a
+          // 'network' class. Surface it via the classifier instead of
+          // letting the unhandled promise reject silently.
+          verifyErr = e;
+        }
+        _authTrace('otp:verify-result', { errorName: verifyErr ? (verifyErr.name || _classifyAuthError(verifyErr)) : null, sessionPresent: !!(otpData && otpData.session) });
+
+        if (verifyErr) {
+          _otpVerifyNavInProgress = false;
+          otpErrorEl.style.color = 'var(--red)';
+          // Force the OTP-invalid bucket when the SDK returned an
+          // error object without a clear class — verifyOtp failures
+          // are almost always wrong/expired codes.
+          const cls = _classifyAuthError(verifyErr);
+          // SPEC AUTH.OTP.NEW-ACCOUNT.FAILURE.AUDIT.08 — a NEW account's verify ALSO creates the user,
+          // so it can fail with a backend 5xx ("Database error saving new user", "unexpected_failure")
+          // that an existing account never triggers. That is NOT a wrong or expired code: showing
+          // "código incorrecto" here misleads a new user into re-typing a code that was actually fine.
+          // Route backend failures to the honest generic message; genuine wrong/expired codes stay
+          // 'otp-invalid'. Existing-account 4xx errors are unaffected → rbn892's UX is unchanged.
+          const backendFailure = _isBackendAuthFailure(verifyErr);
+          const txt = authErr(
+            (cls === 'network' || cls === 'rate') ? cls
+            : backendFailure ? 'generic'
+            : 'otp-invalid'
+          );
+          // Skip the two normal-user-feedback buckets ('otp-invalid' = wrong or expired code,
+          // 'rate' = throttled). Network, generic, and backend 5xx failures reach the reporter so a
+          // real server-side new-account failure is observable in /api/client-log.
+          if ((cls !== 'otp-invalid' && cls !== 'rate') || backendFailure) {
+            _reportLoginSafe(backendFailure ? 'otp-verify-backend' : 'otp-verify', (verifyErr.message || String(verifyErr)), verifyErr.stack || '');
+          }
+          otpErrorEl.innerText = txt;
+          window.setButtonBusy(otpSubmitBtn, false);
+          return;
+        }
+
+        // SPEC AUTH.MOBILE.OTP.E2E.02 (Fase 3) — a verifyOtp with NO error is NOT sufficient to
+        // navigate: on mobile the returned/persisted session can lag a beat behind the resolved
+        // promise, so the old immediate redirect landed on index.html before the session was
+        // readable → index bounced back → "OTP aceptado pero no entra". CONFIRM a real session
+        // (returned session OR getSession, with a bounded grace for SIGNED_IN / storage flush)
+        // BEFORE the single navigation. Never redirect into an unconfirmed null session.
+        _authTrace('otp:session-returned', { sessionPresent: !!(otpData && otpData.session) });
+        let confirmed = (otpData && otpData.session) || null;
+        for (let i = 0; i <= 8 && !confirmed; i++) {          // ~2.4s bounded grace, never an infinite spin
+          try { const { data: s } = await client.auth.getSession(); confirmed = (s && s.session) || null; } catch (_) {}
+          _authTrace('otp:get-session-after-verify', { sessionPresent: !!confirmed, storageKeyPresent: _authStorageKeyPresent(), attempt: i });
+          if (confirmed) break;
+          await new Promise(r => setTimeout(r, 300));
+        }
+
+        if (!confirmed) {
+          // Recoverable: the code verified but no session materialised. Show an actionable error,
+          // clear the spinner, do NOT navigate into a null session. NOTE: the message is deliberately
+          // NEUTRAL ('generic') and never claims the code was wrong — the code DID verify.
+          _otpVerifyNavInProgress = false;
+          _authTrace('otp:no-session-after-verify', { sessionPresent: false, storageKeyPresent: _authStorageKeyPresent() });
+          // SPEC AUTH.OTP.NEW-ACCOUNT.FAILURE.AUDIT.08 — this path was telemetry-blind. A NEW account
+          // whose verify returns 200 with NO session (or a session that never persists) lands here and
+          // the founder only saw the generic message with no server-side trace. Report it (privacy-safe:
+          // never an email/OTP/token) so the exact cause is observable in /api/client-log next time.
+          _reportLoginSafe('otp-no-session', 'verify returned no error but no session materialised', '');
+          otpErrorEl.style.color = 'var(--red)';
+          otpErrorEl.innerText = authErr('generic');
+          window.setButtonBusy(otpSubmitBtn, false);
+          return;
+        }
+
+        // Confirmed session → ONE deterministic navigation owner (location.replace). Reset the shared
+        // redirect-loop log so index boots clean; no competing safeRedirect + delayed href.
+        console.log('[AUTH][otp-verify] session confirmed → entering app');
+        localStorage.removeItem('aurix_otp_email');
+        try {
+          sessionStorage.removeItem('aurix_redirect_log');
+          sessionStorage.removeItem('aurix_redirect_broken');
+        } catch (_) {}
+        window.setButtonBusy(otpSubmitBtn, false);
+        const onAurix = window.location.pathname.startsWith('/aurix-demo/v805/');
+        const target  = window.location.origin + (onAurix ? '/aurix-demo/v805/' : '/') + 'index.html';
+        _authTrace('otp:redirect-attempt', { redirectAttempted: true, sessionPresent: true });
+        window.location.replace(target);
+
+      } finally {
+        isVerifying = false;
+      }
+    });
+
+    // ── OTP resend (cooldown 30s) ──────────────────────────────
+    // OTP-RESEND-1: lets users re-trigger signInWithOtp without
+    // abandoning the OTP step. Invite gate is preserved implicitly:
+    // the OTP step is only reachable after a successful invite +
+    // signInWithOtp earlier in this flow (or via the localStorage
+    // restore at the bottom, which itself depends on a prior gated
+    // OTP send), so resend cannot bypass the invite check.
+    let isResending = false;
+    let _resendTimer = null;
+    function _clearResendTimer() {
+      if (_resendTimer) { clearInterval(_resendTimer); _resendTimer = null; }
+    }
+    function _resetResendButton() {
+      _clearResendTimer();
+      otpResendEl.disabled  = false;
+      otpResendEl.innerText = tL('lg.resend');
+    }
+    function _startResendCooldown(seconds) {
+      _clearResendTimer();
+      const until = Date.now() + seconds * 1000;
+      otpResendEl.disabled = true;
+      const tick = () => {
+        const remaining = Math.ceil((until - Date.now()) / 1000);
+        if (remaining <= 0) { _resetResendButton(); return; }
+        otpResendEl.innerText = tL('lg.resendIn').replace('{n}', remaining);
+      };
+      tick();
+      _resendTimer = setInterval(tick, 1000);
+    }
+
+    otpResendEl.addEventListener('click', async () => {
+      if (isResending || otpResendEl.disabled) return;
+      const email = localStorage.getItem('aurix_otp_email') || emailEl.value.trim();
+      if (!email) { showEmailStep(); return; }
+
+      isResending = true;
+      otpErrorEl.innerText = '';
+      window.setButtonBusy(otpResendEl, true, tL('lg.btn.resending'));
+
+      // HOTFIX P0 — persist before RE-sending the OTP too (same shared owner; idempotent). CASO C: if the
+      // write is not confirmed, do not re-send — show the human retry message and let the user try again.
+      const _persistedResend = await persistAccessEmail(String(email).trim().toLowerCase(), 'login-otp-resend');
+      if (!_persistedResend) {
+        window.setButtonBusy(otpResendEl, false);
+        otpErrorEl.style.color = 'var(--red)';
+        otpErrorEl.innerText   = tL('lg.err.persist');
+        isResending = false;
+        return;
+      }
+
+      let resendErr = null;
+      try {
+        const { error } = await _authWithTimeout(client.auth.signInWithOtp({
+          email,
+          options: { shouldCreateUser: true }
+        }));
+        resendErr = error || null;
+      } catch (e) {
+        resendErr = e;
+      }
+
+      // Restore the resend button before either branch runs. On the
+      // success path, _startResendCooldown will re-disable + relabel
+      // with the countdown; on the error path, the user can retry.
+      window.setButtonBusy(otpResendEl, false);
+
+      if (resendErr) {
+        otpErrorEl.style.color = 'var(--red)';
+        otpErrorEl.innerText   = _authErrorText(resendErr);
+        if (!(isRateLimitError(resendErr) || _classifyAuthError(resendErr) === 'rate')) {
+          _reportLoginSafe('otp-resend', (resendErr.message || String(resendErr)), resendErr.stack || '');
+        }
+      } else {
+        otpErrorEl.style.color = 'var(--text-muted)';
+        otpErrorEl.innerText   = tL('lg.otp.resent');
+        _startResendCooldown(30);
+      }
+      isResending = false;
+    });
+
+    otpBackEl.addEventListener('click', () => {
+      _resetResendButton();
+      showEmailStep();
+    });
+
+    // ── Cooldown restore — hard reset if expired (prevents ghost cooldown) ──
+    const storedUntil = Number(localStorage.getItem('cooldown_until')) || 0;
+    if (storedUntil <= Date.now()) {
+      localStorage.removeItem('cooldown_until');
+      retryCount = 0;
+      resetCooldownState();
+    } else {
+      startCooldown(storedUntil);
+    }
+
+    // ── Self-heal on focus (iOS suspends timers) ───────────────
+    window.addEventListener('focus', () => {
+      const until = Number(localStorage.getItem('cooldown_until')) || 0;
+      if (until <= Date.now()) resetCooldownState();
+    });
+
+    // ── OTP step restore (iOS PWA may reload mid-flow) ─────────
+    const pendingEmail = localStorage.getItem('aurix_otp_email');
+    if (pendingEmail) {
+      emailEl.value = pendingEmail;
+      showOtpStep();
+    }
+  </script>
+
+</body>
+</html>

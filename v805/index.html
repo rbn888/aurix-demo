@@ -1,0 +1,2599 @@
+<!DOCTYPE html>
+<!-- AURIX-DASHBOARD-PREMIUM-POLISH-1: paint dark on the very first frame via an
+     inline attribute on <html> (applied before any CSS parses) so mobile
+     Safari/Chrome never flash white before styles load. -->
+<html lang="es" style="background:#040507">
+<head>
+  <script src="demo/aurix-demo-runtime.js"></script>
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="UTF-8">
+  <!-- ══ SECURITY-HARDENING-V1 · owner: index.html <head> ═════════════════════════
+       The app is published by GitHub Pages, which does NOT allow custom response
+       headers, so the transport-level policy has to travel INSIDE the document.
+       This is the single CSP owner for the app shell: every allowed origin below is
+       one that the shipped bundle actually uses (verified by
+       docs/AURIX-SECURITY-BASELINE-harness.js, which fails the deploy gate if any
+       shipped URL falls outside this allow-list).
+         · script-src  → jsDelivr only (chart.js, lightweight-charts, supabase-js).
+                         'unsafe-inline' is REQUIRED (the shell boots from inline
+                         scripts); no 'unsafe-eval' — nothing in the bundle evals.
+         · connect-src → own origin + Aurix API + Supabase (https + wss realtime).
+                         This is the directive that closes the data-exfiltration path.
+         · img-src     → CoinGecko / jsDelivr crypto icons / FMP stock logos only.
+                         A blocked logo degrades to the designed premium fallback
+                         (_aurixIconImgError), never to a broken UI.
+         · object-src / frame-src 'none', base-uri + form-action 'self' → kill plugin
+                         embedding, framing, <base> hijack and form re-targeting.
+       frame-ancestors / X-Frame-Options are IGNORED in a <meta> CSP, so clickjacking
+       is covered by the frame guard script below instead. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; form-action 'self'; manifest-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'">
+  <!-- Never leak the full app URL (path/query) to a third-party origin; same-origin
+       navigation keeps the full referrer, so nothing internal changes. -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <script>
+    // SECURITY-HARDENING-V1 · clickjacking guard (single owner, runs before anything paints).
+    // GitHub Pages cannot send X-Frame-Options and a <meta> CSP cannot carry frame-ancestors,
+    // so framing is refused here. Zero effect for every real user: the app is never legitimately
+    // embedded (no iframe exists in the product) and a PWA / in-app WebView is top-level, not a frame.
+    (function () {
+      try {
+        if (window.top === window.self) return;              // normal case — do nothing at all
+        try { window.top.location = window.self.location; }  // same-origin-ish: break out
+        catch (_) { document.documentElement.style.display = 'none'; }  // cross-origin: refuse to render
+      } catch (_) {}
+    })();
+  </script>
+  <!-- P0 BOOT-CHECK: discourage stale-HTML caching on mobile (Safari/PWA). The real
+       cache-bust is the per-asset ?v= query + the never-cached /boot-check.html. -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- AURIX-APP-DOMAIN-READY-1: no <base href>. Every asset/page link in this
+       app is relative, so it resolves correctly both under the GitHub Pages
+       subpath (https://aurix-production.invalid/) during migration AND at the
+       root custom domain (https://aurix-production.invalid/) later. The API origin
+       (window.AURIX_API_BASE) is defined once in config.js, loaded before
+       app.js / services below. -->
+  <style>
+    /* AURIX-PREMIUM-ENTRY-1: paint dark on the very first frame so there is
+       no white flash before styles.css or the boot splash parse. This inline
+       rule lives at the top of <head>, ahead of the render-blocking external
+       stylesheet, and matches the splash base + PWA background_color. */
+    html, body { background:#040507; margin:0; }
+  </style>
+  <title>AURIX</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#040507">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Aurix">
+  <!-- AURIX-PWA-FIRST-FRAME-CRITICAL-1: a real PNG icon + dark native iOS launch
+       images. Without these iOS paints a WHITE native launch screen before WebKit
+       renders any HTML, which no in-page CSS can cover. Each startup image must
+       match its device's exact pixel size or iOS ignores it. AURIX on these is
+       sized/centred to match the in-page #bootLoader so the native→web handoff
+       shows no jump. -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="apple-touch-startup-image" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1170x2532.png">
+  <link rel="apple-touch-startup-image" media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1179x2556.png">
+  <link rel="apple-touch-startup-image" media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1284x2778.png">
+  <link rel="apple-touch-startup-image" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1290x2796.png">
+  <link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1125x2436.png">
+  <link rel="apple-touch-startup-image" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="splash/launch-828x1792.png">
+  <!-- AURIX-PWA-FIRST-FRAME: solid #070a14 startup images for the rest of the
+       iPhone lineup so no device ever shows a white native launch screen. These
+       carry no wordmark (no text renderer available to pixel-match the splash);
+       the in-page #bootLoader paints the AURIX wordmark immediately after, so
+       the sequence is "black → AURIX" with no white frame and no movement. -->
+  <link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="splash/launch-750x1334.png">
+  <link rel="apple-touch-startup-image" media="(device-width:414px) and (device-height:736px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1242x2208.png">
+  <link rel="apple-touch-startup-image" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1242x2688.png">
+  <link rel="apple-touch-startup-image" media="(device-width:402px) and (device-height:874px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1206x2622.png">
+  <link rel="apple-touch-startup-image" media="(device-width:440px) and (device-height:956px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="splash/launch-1320x2868.png">
+  <script>
+    // ════════════════════════════════════════════════════════════════════════
+    // AURIX — P0 BOOT WATCHDOG v2 (self-contained; index.html, NOT app.js).
+    // Runs before app.js. Guarantees the splash can NEVER stay permanent and that
+    // the diagnostic is ACTUALLY VISIBLE on iOS Safari. Fixes from device evidence:
+    //   • panel used `inset:0` (unsupported < iOS 14.5) → collapsed to 0×0 (invisible).
+    //     Now uses explicit top/left/right/bottom + z-index 2147483647 + inline styles.
+    //   • adds a 500ms HEARTBEAT so a blocked main thread (long sync task / loop in
+    //     app.js) is detectable: if tickCount freezes, the event loop is blocked.
+    //   • a second visible stamp line confirms the timer was actually registered.
+    (function() {
+      var BUILD = 'v805-launch-final';
+      var APPJS_V = '765';
+      var HTML_TS = '2026-07-09T00:00:00Z';
+      var T0 = (new Date()).getTime();
+      window.AURIX_BUILD = BUILD;
+      window.AURIX_HTML_TS = HTML_TS;
+      window.__AURIX_BOOT_WATCHDOG_STARTED = true;
+      var B = window.__AURIX_BOOT = {
+        build: BUILD, appJsVersion: APPJS_V, t0: T0, steps: [], errors: [],
+        appJsRequested: false, appJsLoaded: false, appJsExecuted: false,
+        appJsLoadError: false, probe: null,
+        domContentLoaded: false, windowLoad: false, bootstrapStarted: false,
+        dashboardReady: false, splashHidden: false, watchdogFired: false,
+        tickCount: 0, lastTick: T0,
+        mark: function(s) { try { B.steps.push(s + '(' + ((new Date()).getTime() - T0) + 'ms)'); } catch (_) {} },
+        last: function() { return B.steps.length ? B.steps[B.steps.length - 1] : '(none)'; }
+      };
+      B.mark('index_html_parsed');
+
+      // ── SPEC.43 BUILD-COHERENCE GUARD (early phase) ────────────────────────────────────────────
+      // A browser-cached OLD index.html keeps referencing an OLD app.js?v=… . Fetch a no-store
+      // version.json; if the served INDEX is behind the deployed version, do at most ONE controlled
+      // cache-busted reload PER expected version (shared marker `aurix_coherence_reload` {v,n,ts}, also
+      // read/cleared by the app.js coherence contract). If a single reload did not adopt (CDN
+      // propagation lag), DON'T loop — flag a recoverable state for app.js to surface. The old guard's
+      // permanent block (marker set once per target, never re-armed after a failed adopt) was the exact
+      // owner of "stuck on v521 after v522". Never clears auth/portfolio/history/cache-of-data.
+      try {
+        var _servedV = parseInt(APPJS_V, 10) || 0;
+        window.__AURIX_SERVED_APPJS = _servedV;
+        // SPEC ANDROID-AUTH-REDIRECT-LOOP (degraded mode) — round-trip storage probe. When storage is
+        // defeated (Android in-app WebView / partitioned), the coherence reload's own anti-loop marker
+        // (aurix_coherence_reload, sessionStorage) can't persist, so a stale index would reload forever.
+        // In that case we DO NOT perform the cache-busted coherence reload (see guard below).
+        var _storageOk = (function () { try { var k = '__aurix_probe__'; sessionStorage.setItem(k, '1'); var ok = sessionStorage.getItem(k) === '1'; sessionStorage.removeItem(k); return ok; } catch (_) { return false; } })();
+        window.__AURIX_STORAGE_OK = _storageOk;
+        var _reqV = null; try { var _sc = document.querySelector('script[src*="app.js?v="]'); if (_sc) { var _mm = (_sc.getAttribute('src') || '').match(/[?&]v=(\d+)/); _reqV = _mm ? parseInt(_mm[1], 10) : null; } } catch (_) {}
+        window.__AURIX_REQUESTED_APPJS = _reqV;
+        fetch('version.json?cb=' + T0, { cache: 'no-store' })
+          .then(function (r) { return r && r.ok ? r.json() : null; })
+          .then(function (j) {
+            if (!j || typeof j.appjs !== 'number') return;
+            window.__AURIX_LATEST_APPJS = j.appjs;
+            window.__AURIX_LATEST_BUILD = j.build || null;
+            if (j.appjs > _servedV) {                                // served INDEX is stale
+              if (!_storageOk) {                                     // degraded mode — cannot persist the anti-loop marker → NO reload (avoid infinite reload)
+                window.__AURIX_COHERENCE_DEGRADED = j.appjs;
+                try { console.warn('[BOOT][BUILD-COHERENCE] storage blocked — skipping coherence reload (degraded, no loop); served v' + _servedV + ' < deployed v' + j.appjs); } catch (_) {}
+                return;
+              }
+              var mk = null; try { mk = JSON.parse(sessionStorage.getItem('aurix_coherence_reload') || 'null'); } catch (_) {}
+              if (mk && mk.v === j.appjs && (mk.n || 0) >= 1) {       // already reloaded once for this version → do NOT loop
+                window.__AURIX_BUILD_RELOAD_EXHAUSTED = j.appjs;
+                try { console.warn('[BOOT][BUILD-COHERENCE] index still v' + _servedV + ' after one reload to v' + j.appjs + ' — recoverable update state (no loop)'); } catch (_) {}
+                return;
+              }
+              try { sessionStorage.setItem('aurix_coherence_reload', JSON.stringify({ v: j.appjs, n: (mk && mk.v === j.appjs ? (mk.n || 0) + 1 : 1), ts: T0 })); } catch (_) {}
+              try {
+                if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { try { r.unregister(); } catch (_) {} }); }).catch(function () {});
+                if (typeof caches !== 'undefined' && caches.keys) caches.keys().then(function (ks) { ks.forEach(function (k) { try { caches.delete(k); } catch (_) {} }); }).catch(function () {});
+              } catch (_) {}
+              var onAurix = location.pathname.indexOf('/aurix-demo/v805/') === 0;
+              var base = location.origin + (onAurix ? '/aurix-demo/v805/' : '/');
+              try { console.warn('[BOOT][BUILD-COHERENCE] served index v' + _servedV + ' < deployed v' + j.appjs + ' — one cache-busted reload'); } catch (_) {}
+              location.replace(base + 'index.html?v=' + j.appjs + '&_cb=' + T0);
+            } else if (j.build && j.build !== BUILD) {
+              // BUILD-COHERENCE (CSS-ONLY RELEASES) — a CSS/markup-only deploy bumps `build`
+              // (and styles.css?v=) but NOT `appjs`, so the appjs check above never fires and a
+              // browser-cached OLD index keeps requesting the OLD styles.css?v= → stale layout
+              // ("old tabs" instead of the premium module). Mirror the appjs guard on the build
+              // STRING: at most ONE cache-busted reload per build (separate marker), degraded-mode
+              // safe (no reload when storage can't persist the anti-loop marker → never a loop).
+              if (!_storageOk) { window.__AURIX_COHERENCE_DEGRADED_BUILD = j.build; return; }
+              var mkb = null; try { mkb = JSON.parse(sessionStorage.getItem('aurix_coherence_reload_build') || 'null'); } catch (_) {}
+              if (mkb && mkb.b === j.build && (mkb.n || 0) >= 1) {
+                window.__AURIX_BUILD_RELOAD_EXHAUSTED_BUILD = j.build;
+                try { console.warn('[BOOT][BUILD-COHERENCE] index build ' + BUILD + ' still stale vs ' + j.build + ' after one reload — recoverable (no loop)'); } catch (_) {}
+                return;
+              }
+              try { sessionStorage.setItem('aurix_coherence_reload_build', JSON.stringify({ b: j.build, n: (mkb && mkb.b === j.build ? (mkb.n || 0) + 1 : 1), ts: T0 })); } catch (_) {}
+              try { if (typeof caches !== 'undefined' && caches.keys) caches.keys().then(function (ks) { ks.forEach(function (k) { try { caches.delete(k); } catch (_) {} }); }).catch(function () {}); } catch (_) {}
+              var onAurixB = location.pathname.indexOf('/aurix-demo/v805/') === 0;
+              var baseB = location.origin + (onAurixB ? '/aurix-demo/v805/' : '/');
+              try { console.warn('[BOOT][BUILD-COHERENCE] served build ' + BUILD + ' != deployed ' + j.build + ' (same appjs) — one cache-busted reload'); } catch (_) {}
+              location.replace(baseB + 'index.html?b=' + encodeURIComponent(j.build) + '&_cb=' + T0);
+            }
+          }).catch(function () {});
+      } catch (_) {}
+
+      // HEARTBEAT — proves the event loop is alive. If it stops, the main thread is
+      // blocked (a long synchronous task or loop, e.g. in app.js).
+      try {
+        setInterval(function() { B.tickCount++; B.lastTick = (new Date()).getTime(); window.__AURIX_LAST_TICK = B.lastTick; window.__AURIX_TICK_COUNT = B.tickCount; }, 500);
+      } catch (_) {}
+
+      // Error capture (registered first so it catches app.js parse/early errors).
+      try {
+        window.addEventListener('error', function(e) {
+          try { var f = (e && e.filename) || ''; if (f.indexOf('extension://') >= 0) return;
+            B.errors.push(((e && (e.message || (e.error && e.error.message))) || 'error') + ' @ ' + f.split('/').pop() + ':' + ((e && e.lineno) || '') + ':' + ((e && e.colno) || '')); } catch (_) {}
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          try { var r = e && e.reason; B.errors.push('promise: ' + ((r && (r.message || r.stack)) || r)); } catch (_) {}
+        });
+      } catch (_) {}
+
+      // Build record + standalone detection + NON-blocking legacy SW/cache cleanup. NO reload.
+      try {
+        try { localStorage.setItem('aurix_build', BUILD); B.mark('localStorage_ok'); } catch (_) { B.errors.push('localStorage THROWS'); }
+        try { sessionStorage.getItem('x'); B.mark('sessionStorage_ok'); } catch (_) { B.errors.push('sessionStorage THROWS'); }
+        try {
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) navigator.serviceWorker.getRegistrations().then(function(regs) { regs.forEach(function(r) { try { r.unregister(); } catch (_) {} }); }).catch(function() {});
+          if (typeof caches !== 'undefined' && caches.keys) caches.keys().then(function(keys) { keys.forEach(function(k) { try { caches.delete(k); } catch (_) {} }); }).catch(function() {});
+        } catch (_) {}
+        var iosStandalone = window.navigator.standalone === true;
+        var mqStandalone = false; try { mqStandalone = window.matchMedia('(display-mode: standalone)').matches; } catch (_) {}
+        window.IS_STANDALONE = iosStandalone || mqStandalone;
+        window.IS_IOS_STANDALONE = iosStandalone;
+        document.documentElement.setAttribute('data-standalone', window.IS_STANDALONE ? 'true' : 'false');
+        if (iosStandalone) document.documentElement.setAttribute('data-ios-standalone', 'true');
+      } catch (_) {}
+
+      document.addEventListener('DOMContentLoaded', function() { B.domContentLoaded = true; B.mark('DOMContentLoaded'); });
+      window.addEventListener('load', function() { B.windowLoad = true; B.mark('window_load'); });
+
+      // PRODUCTION-CLEAN SPLASH: the splash shows ONLY the AURIX wordmark. The build /
+      // app.js / timestamp / "watchdog" diagnostics live on window.__AURIX_BOOT (read via
+      // debugAurixBoot()) and are NEVER painted into the UI. No visible stamp.
+
+      // ── BOOT SUPERVISOR · SPEC BOOT-CHROME-ANDROID-P0 ─────────────────────────────────────────
+      // The old backstop was a blind wall-clock timer: "app.js has not executed by 12000ms ⇒
+      // declare app_js_never_loaded". On a slow mobile link that deadline expires while the bundle
+      // is still DOWNLOADING. Reproduced on Chrome 140 / Android at ~400 Kbps against production:
+      // app.js (≈990 KB over the wire) was only REQUESTED at 11.4s — it queues behind styles.css
+      // and services/*.js — and finished at 31.9s with HTTP 200. The panel was therefore painted
+      // at 12s over a completely healthy boot and, because nothing ever retired it, stayed on top
+      // after app.js executed at 32.4s. Signature: appJsRequested=true, appJsLoaded=false,
+      // domContentLoaded=false, errors=[] — i.e. the parser was still blocked on a live transfer.
+      //
+      // The supervisor replaces the deadline with EVIDENCE:
+      //   • alive    — document.readyState === 'loading' means the parser is still blocked on the
+      //                pending <script src="app.js">. A failed request cannot block the parser:
+      //                onerror fires, the parser moves on and readyState leaves 'loading'. So a
+      //                blocked parser is positive proof that the transfer is still in flight.
+      //   • terminal — onerror fired · the parser passed the script without loading it · the bundle
+      //                loaded but never executed · a 1-byte Range probe proves the resource is
+      //                unreachable/4xx/5xx. Terminal is reported at once, with no 12s tax.
+      //   • ceiling  — still 'loading' and the probe is fine, but nothing lands: a stalled socket.
+      // Terminal ⇒ ONE marked recovery (SW unregister + Aurix cache purge + a single reload); if
+      // the marker says we already tried, paint the diagnostic. Never a loop. sessionStorage is
+      // only ever written/removed key-by-key — localStorage, portfolio, session and preferences
+      // are never touched.
+      var SOFT_MS = 12000, PROBE_EVERY_MS = 8000, CEILING_MS = 90000, EXEC_GRACE_MS = 4000;
+      var RECOVERY_KEY = 'aurix_boot_recovery';
+
+      // Resolved LAZILY: this script runs in <head>, long before the app.js tag is parsed. The
+      // element only exists once the parser has reached it — which is exactly when we need it.
+      function appJsUrl() {
+        try { var s = document.querySelector('script[src*="app.js?v="]'); if (s && s.src) return s.src; } catch (_) {}
+        return 'app.js?v=' + APPJS_V;
+      }
+      function storageOk() {
+        if (typeof window.__AURIX_STORAGE_OK === 'boolean') return window.__AURIX_STORAGE_OK;
+        try { var k = '__aurix_probe2__'; sessionStorage.setItem(k, '1'); var ok = sessionStorage.getItem(k) === '1'; sessionStorage.removeItem(k); return ok; } catch (_) { return false; }
+      }
+      // The recovery screen must never be Spanish-only: ?lang= wins, then the persisted app
+      // preference (LANG_KEY in app.js), then ?langhint=, then the device language. All
+      // readable pre-bootstrap. Same precedence as the language owner below (M.03 · B).
+      function bootLang() {
+        var l = null;
+        try { var m = (location.search || '').match(/[?&]lang=(es|en)\b/i); if (m) l = m[1].toLowerCase(); } catch (_) {}
+        if (!l) { try { var s = localStorage.getItem('portfolio_lang'); if (s === 'es' || s === 'en') l = s; } catch (_) {} }
+        if (!l) { try { var mh = (location.search || '').match(/[?&]langhint=(es|en)\b/i); if (mh) l = mh[1].toLowerCase(); } catch (_) {} }
+        if (!l) { try { l = ((navigator.language || '') + '').toLowerCase().indexOf('es') === 0 ? 'es' : 'en'; } catch (_) { l = 'en'; } }
+        return l === 'es' ? 'es' : 'en';
+      }
+      var DIAG_T = {
+        es: { title: 'No hemos podido cargar Aurix', hint: 'Tu cartera, tu sesión y tus preferencias están intactas. Vuelve a intentarlo.', retry: 'Reintentar (recarga limpia)', retrying: 'Reintentando…', details: 'Ver detalles técnicos', detailsHint: 'Información técnica para soporte. No contiene datos personales ni de tu cartera.' },
+        en: { title: 'We could not load Aurix', hint: 'Your portfolio, session and preferences are intact. Please try again.', retry: 'Retry (clean reload)', retrying: 'Retrying…', details: 'Show technical details', detailsHint: 'Technical information for support. It contains no personal or portfolio data.' }
+      };
+
+      function purgeAurixCaches() {
+        var jobs = [];
+        try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { try { return r.unregister(); } catch (_) { return null; } })); }).catch(function () {})); } catch (_) {}
+        try { if (typeof caches !== 'undefined' && caches.keys) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { try { return caches.delete(k); } catch (_) { return null; } })); }).catch(function () {})); } catch (_) {}
+        try { return Promise.all(jobs); } catch (_) { return { then: function (f) { try { f(); } catch (_) {} return this; } }; }
+      }
+      function recoveryMark() { try { return JSON.parse(sessionStorage.getItem(RECOVERY_KEY) || 'null'); } catch (_) { return null; } }
+      // Exactly ONE automatic recovery per tab. Degraded storage (Android in-app WebView /
+      // partitioned) cannot persist the anti-loop marker, so we do NOT auto-reload there — the
+      // diagnostic is shown instead. That is the same degraded-mode rule the coherence guard uses.
+      function recoverOnce(reason) {
+        if (!storageOk()) return false;
+        if (recoveryMark()) return false;
+        var ts = (new Date()).getTime();
+        try { sessionStorage.setItem(RECOVERY_KEY, JSON.stringify({ r: reason, b: BUILD, ts: ts })); } catch (_) { return false; }
+        var qs = (location.search || '').replace(/[?&]_recover=\d+/g, '');
+        if (qs && qs.charAt(0) !== '?') qs = '?' + qs.replace(/^&/, '');
+        var done = false;
+        var go = function () {
+          if (done) return; done = true;
+          try { location.replace(location.pathname + (qs ? qs + '&' : '?') + '_recover=' + ts); } catch (_) { try { location.reload(); } catch (_) {} }
+        };
+        try { console.warn('[BOOT][SUPERVISOR] ' + reason + ' — one recovery reload'); } catch (_) {}
+        try { setTimeout(go, 1500); } catch (_) {}   // never hang waiting on caches/SW
+        try { purgeAurixCaches().then(go, go); } catch (_) { go(); }
+        return true;
+      }
+
+      // 1-byte Range probe. It exists to answer ONE question: does the server give a definitive
+      // "this resource is not servable" verdict (4xx/5xx)? That is the only probe outcome allowed
+      // to condemn the boot — see the priority rule in supervise().
+      //
+      // A network-level failure (status 0) is deliberately NOT a verdict. Under a saturated slow
+      // link the probe competes with the very transfer it is measuring and can fail on contention,
+      // connection limits or an in-flight navigation. Reproduced at 400 Kbps: the probe errored
+      // while app.js was downloading perfectly well, and an earlier revision of this supervisor
+      // wrongly reported app_js_unreachable_network over a healthy boot.
+      //
+      // The response is aborted as soon as the headers land, so a proxy that ignores Range can
+      // never turn the probe into a second full download of the bundle.
+      function probeAppJs() {
+        var at = function () { return (new Date()).getTime() - T0; };
+        try {
+          var ac = null; try { ac = new AbortController(); } catch (_) {}
+          return fetch(appJsUrl(), { method: 'GET', headers: { Range: 'bytes=0-0' }, cache: 'no-store', credentials: 'omit', signal: ac ? ac.signal : undefined })
+            .then(function (r) {
+              B.probe = { status: r.status, definitiveFailure: r.status >= 400, at: at() };
+              try { if (ac) ac.abort(); } catch (_) {}                       // headers are enough — never pull the body
+            })
+            .catch(function (e) { B.probe = { status: 0, definitiveFailure: false, error: String((e && e.message) || e).slice(0, 120), at: at() }; });
+        } catch (_) { B.probe = { status: 0, definitiveFailure: false, error: 'probe_threw', at: at() }; return { then: function (f) { try { f(); } catch (_) {} return this; } }; }
+      }
+
+      function esc(s) { return String(s).replace(/[<>&]/g, function(c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }); }
+      // PII-FREE BY CONSTRUCTION: only boot flags, versions, cache/SW *names*, transport state and
+      // the UA. No tokens, no email, no holdings, no localStorage dump.
+      function showDiag(reason, extra) {
+        try {
+          if (document.getElementById('aurixBootDiag')) return;
+          B.watchdogFired = true;
+          var L = DIAG_T[bootLang()];
+          var now = (new Date()).getTime();
+          var mk = recoveryMark();
+          var info = {
+            reason: reason, build: B.build, htmlTs: HTML_TS,
+            appJsUrl: appJsUrl(), appJsVersionRequested: B.appJsVersion,
+            deployedAppjs: (typeof window.__AURIX_LATEST_APPJS === 'number' ? window.__AURIX_LATEST_APPJS : null),
+            deployedBuild: window.__AURIX_LATEST_BUILD || null,
+            lastBootStep: B.last(),
+            appJsRequested: B.appJsRequested, appJsLoaded: B.appJsLoaded, appJsExecuted: B.appJsExecuted,
+            appJsLoadError: !!B.appJsLoadError, scriptProbe: B.probe || null,
+            bootstrapStarted: B.bootstrapStarted, dashboardReady: B.dashboardReady,
+            domContentLoaded: B.domContentLoaded, windowLoad: B.windowLoad, readyState: document.readyState,
+            tickCount: B.tickCount, lastTickAgeMs: now - B.lastTick,
+            eventLoopBlocked: (now - B.lastTick) > 1500,
+            recovery: mk ? { attempted: true, reason: mk.r, build: mk.b, agoMs: now - (mk.ts || now) } : { attempted: false, reason: storageOk() ? null : 'storage_degraded' },
+            serviceWorker: (extra && extra.sw) || null,
+            swControlled: (function () { try { return !!(navigator.serviceWorker && navigator.serviceWorker.controller); } catch (_) { return null; } })(),
+            aurixCaches: (extra && extra.caches) || null,
+            storageOk: storageOk(),
+            online: (function () { try { return navigator.onLine; } catch (_) { return null; } })(),
+            visibilityState: document.visibilityState || null,
+            lang: bootLang(),
+            errors: B.errors.slice(0, 8), steps: B.steps,
+            ua: navigator.userAgent, ts: new Date().toISOString()
+          };
+          var bl = document.getElementById('bootLoader'); if (bl) bl.style.display = 'none';
+          var p = document.createElement('div'); p.id = 'aurixBootDiag'; p.setAttribute('lang', info.lang);
+          p.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;z-index:2147483647;background:#070a14;color:#cdd9ef;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;padding:20px 14px;overflow:auto;-webkit-overflow-scrolling:touch';
+          // M.06 · CIERRE TRANSVERSAL — EL DIAGNÓSTICO INTERNO YA NO ES LA PANTALLA.
+          // Antes esto volcaba ~30 campos internos (build, URL del bundle, pasos de arranque,
+          // nombres de cachés y de Service Worker, estado de transporte, errores, UA) A PANTALLA
+          // COMPLETA, en monoespaciada, como PRIMERA y única cosa que veía un cliente cuyo
+          // arranque había fallado. Es PII-free por construcción —y eso se conserva— pero sigue
+          // siendo arquitectura interna expuesta sin necesidad, y para la persona que lo lee es
+          // un muro de JSON en el peor momento posible.
+          // Ahora la superficie de cliente es un mensaje honesto y un botón de reintento; el
+          // volcado sigue EXISTIENDO, íntegro, detrás de una acción explícita («Ver detalles
+          // técnicos»), que es lo que soporte necesita. Cero observabilidad perdida, cero
+          // exposición por defecto. El <details> nativo no necesita JS ni CSS nuevos.
+          p.innerHTML = '<div style="max-width:560px;margin:0 auto">'
+            + '<div style="font:700 18px/1.3 -apple-system,system-ui;color:#e8eefb;margin-bottom:8px">' + esc(L.title) + '</div>'
+            + '<div style="font:400 14px/1.5 -apple-system,system-ui;color:#9db0cf;margin-bottom:18px">' + esc(L.hint) + '</div>'
+            + '<button id="aurixBootRetry" style="width:100%;padding:14px 18px;background:#1b3a6b;color:#fff;border:0;border-radius:10px;font:600 15px/1 -apple-system,system-ui">' + esc(L.retry) + '</button>'
+            + '<details style="margin-top:20px">'
+            +   '<summary style="cursor:pointer;font:500 13px/1.4 -apple-system,system-ui;color:#7fb0ff;padding:8px 0">' + esc(L.details) + '</summary>'
+            +   '<div style="font:400 12px/1.45 -apple-system,system-ui;color:#6f80a0;margin:6px 0 10px">' + esc(L.detailsHint) + '</div>'
+            +   '<div style="white-space:pre-wrap;word-break:break-word;background:#0c1426;border:1px solid #1c2b49;border-radius:8px;padding:12px">' + esc(JSON.stringify(info, null, 2)) + '</div>'
+            + '</details>'
+            + '</div>';
+          document.body.appendChild(p);
+          var btn = document.getElementById('aurixBootRetry');
+          // Manual retry: purge Aurix caches + clear ONLY the boot markers (so the automatic
+          // recovery is re-armed for the next attempt). Never sessionStorage.clear() — that used
+          // to take the app's own session state with it.
+          if (btn) btn.onclick = function () {
+            try { btn.disabled = true; btn.textContent = L.retrying; } catch (_) {}
+            try { sessionStorage.removeItem(RECOVERY_KEY); sessionStorage.removeItem('aurix_coherence_reload'); sessionStorage.removeItem('aurix_coherence_reload_build'); } catch (_) {}
+            var done = false;
+            var go = function () { if (done) return; done = true; try { location.replace(location.pathname + '?fresh=' + (new Date()).getTime()); } catch (_) { try { location.reload(); } catch (_) {} } };
+            try { setTimeout(go, 1500); } catch (_) {}
+            try { purgeAurixCaches().then(go, go); } catch (_) { go(); }
+          };
+        } catch (_) {}
+      }
+      // Collect the async SW/cache facts (bounded to 700ms) before painting, so the report is
+      // complete on the first frame the user sees.
+      function paintDiag(reason) {
+        try {
+          if (document.getElementById('aurixBootDiag')) return;
+          var extra = {}; var jobs = [];
+          try {
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { extra.sw = { registrations: rs.length, scopes: rs.slice(0, 4).map(function (r) { return String((r && r.scope) || '').slice(0, 80); }) }; }).catch(function () { extra.sw = 'unavailable'; }));
+            else extra.sw = 'unsupported';
+          } catch (_) { extra.sw = 'unsupported'; }
+          try {
+            if (typeof caches !== 'undefined' && caches.keys) jobs.push(caches.keys().then(function (ks) { extra.caches = ks.slice(0, 12); }).catch(function () { extra.caches = 'unavailable'; }));
+            else extra.caches = 'unsupported';
+          } catch (_) { extra.caches = 'unsupported'; }
+          var painted = false;
+          var doIt = function () { if (painted) return; painted = true; showDiag(reason, extra); };
+          try { setTimeout(doIt, 700); } catch (_) {}
+          try { Promise.all(jobs).then(doIt, doIt); } catch (_) { doIt(); }
+        } catch (_) { showDiag(reason, null); }
+      }
+
+      // `verdictIssued` gates only the FAILURE verdict. The supervisor keeps polling afterwards so
+      // that a late-arriving bundle can still retire an already-painted panel — a verdict that the
+      // app subsequently disproves must not outlive the evidence for it.
+      var verdictIssued = false, disarmed = false, lastProbeAt = -PROBE_EVERY_MS, probeInFlight = false;
+      function terminal(reason) {
+        if (verdictIssued) return; verdictIssued = true;
+        if (recoverOnce(reason)) return;   // one marked reload — the page is going away
+        paintDiag(reason);
+      }
+      function supervise() {
+        if (disarmed) return;
+        var t = (new Date()).getTime() - T0;
+        // SUCCESS — the app is alive. Disarm and, if a panel was painted by an earlier verdict
+        // that the app has since disproven, retire it: nobody may be left staring at a
+        // diagnostic on top of a working application.
+        if (B.appJsExecuted || B.dashboardReady || B.splashHidden) {
+          disarmed = true;
+          var p = document.getElementById('aurixBootDiag');
+          if (p && p.parentNode) { try { p.parentNode.removeChild(p); B.mark('boot_diag_retired'); } catch (_) {} }
+          var blr = document.getElementById('bootLoader');
+          if (blr && B.watchdogFired && !B.splashHidden) { try { blr.style.display = ''; } catch (_) {} }
+          return;
+        }
+        if (verdictIssued) return;   // verdict already out — from here we only watch for success
+        // TERMINAL — proven failure. Reported immediately; no 12s tax on a real 404.
+        if (B.appJsLoadError) return terminal('app_js_load_error');
+        if (B.appJsLoaded && t > EXEC_GRACE_MS) return terminal('app_js_loaded_but_never_executed');
+        if (B.appJsRequested && !B.appJsLoaded && document.readyState !== 'loading') return terminal('app_js_parser_passed_without_load');
+        // Only a DEFINITIVE server status may condemn the bundle. A probe network error is
+        // ambiguous and must never outrank the parser evidence below.
+        if (B.probe && B.probe.definitiveFailure) return terminal('app_js_unreachable_' + B.probe.status);
+        // ALIVE — parser still blocked on the pending bundle ⇒ the transfer is in flight. Wait.
+        if (t < SOFT_MS) return;
+        if (!probeInFlight && (t - lastProbeAt) >= PROBE_EVERY_MS) {
+          probeInFlight = true; lastProbeAt = t;
+          probeAppJs().then(function () { probeInFlight = false; }, function () { probeInFlight = false; });
+        }
+        if (t > CEILING_MS) return terminal('app_js_stalled');
+      }
+      window.__AURIX_BOOT_SUPERVISE = supervise;   // harness hook
+      try { setInterval(supervise, 1000); } catch (_) { setTimeout(supervise, SOFT_MS); }
+    })();
+  </script>
+  <!-- AURIX-PWA-FIRST-FRAME-CRITICAL-1: include weight 600 (the wordmark weight,
+       previously missing from the request and synthesised) and preload the sheet
+       so Inter is loading before the splash paints — minimises the wordmark
+       reshaping (FOUT) when the real font swaps in. -->
+  
+  <link href="vendor/inter.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=765">
+</head>
+<body style="background:#040507">
+
+
+<style>
+  /* AURIX-PREMIUM-ENTRY-1: minimal premium splash — only the AURIX wordmark
+     on the dark base, with a restrained electric-blue gradient + glow. CSS
+     only, no JS animation, no image, no orb. Motion is disabled under
+     prefers-reduced-motion and there is no layout shift (fixed overlay). */
+  #bootLoader{
+    position:fixed; inset:0; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(120% 120% at 50% 38%, #0C1220 0%, #040507 60%, #030406 100%);
+    font-family:'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+    transition:opacity .35s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #bootLoader .boot-wordmark{
+    /* AURIX-PWA-FIRST-FRAME-CRITICAL-1: identical DNA to the header wordmark
+       (weight 600 + header gradient) so the splash → header handoff never reads
+       as two different logos. Fully STATIC — no infinite glow pulse. */
+    font-weight:600; font-size:36px;
+    letter-spacing:.34em; padding-left:.34em; /* optical centering vs tracking */
+    background:linear-gradient(168deg,#6A9CFF 0%,#4A82F0 70%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+    filter:drop-shadow(0 1px 8px rgba(74,130,240,.10)) drop-shadow(0 0 20px rgba(74,130,240,.06));
+    text-rendering:optimizeLegibility;
+  }
+  @media (max-width:480px){
+    #bootLoader .boot-wordmark{ font-size:30px; }
+  }
+</style>
+<div id="bootLoader" role="status" aria-live="polite" aria-label="Aurix">
+  <div class="boot-wordmark">AURIX</div>
+</div>
+<script>
+  (function() {
+    // Keep the document language in sync for a11y; the splash itself is
+    // now text-only (just the wordmark) so there is no status copy to set.
+    try {
+      // AURIX-WAITLIST-1: honor a cross-origin ?lang= handoff from the landing
+      // (localStorage is not shared across origins). Persist it so the app and
+      // a login bounce both render in the chosen language.
+      //
+      // M.03 · B — PRECEDENCIA DETERMINISTA, UNA SOLA AUTORIDAD (`portfolio_lang`):
+      //   1. `?lang=`     · elección EXPLÍCITA del usuario (landing) → gana siempre.
+      //   2. preferencia ya persistida (la elegida dentro de Aurix) → gana al hint.
+      //   3. `?langhint=` · idioma con el que la landing se mostraba → sólo si no
+      //                     hay preferencia previa en este contenedor.
+      //   4. español.
+      // Antes el handoff era un único `?lang=` que la landing ponía SIEMPRE con su
+      // idioma por defecto (inglés): volver a entrar por la landing borraba el
+      // español que el usuario había elegido dentro de la app.
+      var _qs = new URLSearchParams(location.search);
+      var _p = _qs.get('lang'), _h = _qs.get('langhint');
+      var _s = localStorage.getItem('portfolio_lang');
+      // ONBOARDING · CIERRE — las dos se guardan en SESIÓN, no en `portfolio_lang`: escribir
+      // esa clave antes de leer la cuenta hacía pasar por «más recientes» TODAS las
+      // preferencias locales (también la moneda base por defecto). La elección explícita la
+      // adopta app.js tras leer la cuenta; la pista sólo rellena el vacío.
+      _p = (_p || '').toLowerCase().split(/[-_]/)[0]; _h = (_h || '').toLowerCase().split(/[-_]/)[0];
+      try {
+        if (_p === 'en' || _p === 'es') sessionStorage.setItem('aurix_lang_choice', _p);
+        else if ((_h === 'en' || _h === 'es') && _s !== 'en' && _s !== 'es') sessionStorage.setItem('aurix_lang_hint', _h);
+      } catch (_) {}
+      // Misma precedencia que app.js (`let lang`): elección de esta sesión → guardada →
+      // pista/navegador dejados por el acceso → navegador.
+      var _ok = function (v) { return (v === 'es' || v === 'en') ? v : null; };
+      var _ss = function (k) { try { return sessionStorage.getItem(k); } catch (_) { return null; } };
+      var lang = _ok(_ss('aurix_lang_choice')) || _ok(localStorage.getItem('portfolio_lang')) || _ok(_ss('aurix_lang_hint'))
+        || (/^es(?:$|[-_])/i.test(String(navigator.language || '')) ? 'es' : 'en');
+      document.documentElement.lang = lang;
+    } catch (_) {}
+  })();
+</script>
+
+  <div class="app" id="appRoot">
+
+    <header class="header">
+      <div class="header-left">
+        <button class="logo-block header-title" id="logoHome" aria-label="Volver al inicio" data-i18n-aria="ariaBackHome">
+          <span class="logo-aurix">AURIX</span>
+        </button>
+      </div>
+      <nav class="header-tabs" id="headerTabs" aria-label="Primary" data-i18n-aria="ariaPrimaryNav">
+        <button class="header-tab" data-tab="home" data-i18n="navDashboard">Dashboard</button>
+        <button class="header-tab" data-tab="market" data-i18n="navMarket">Market</button>
+        <button class="header-tab" data-tab="intelligence" data-i18n="navIntelligence">Intelligence</button>
+        <button class="header-tab" data-tab="workspace" data-i18n="navWorkspace">Workspace</button>
+      </nav>
+      <div class="header-right">
+        <button id="headerSearch" class="header-search" aria-label="Search" data-i18n-aria="ariaSearch">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.6-4.6"/></svg>
+        </button>
+        <button id="menuToggle" class="menu-toggle" aria-label="Settings &amp; preferences" aria-expanded="false" data-i18n-aria="ariaSettings">
+          <span class="menu-toggle-bar"></span>
+          <span class="menu-toggle-bar"></span>
+          <span class="menu-toggle-bar"></span>
+        </button>
+
+        <div id="menuPanel" class="menu-panel" role="menu">
+          <!-- DSH.MENU.02 — personal identity header (dominant block) -->
+          <div class="menu-identity">
+            <span class="menu-identity-name" id="menuUserName">—</span>
+            <span class="menu-identity-badge" id="menuUserBadge" data-tier="free">FREE</span>
+          </div>
+          <div class="menu-divider"></div>
+          <!-- DSH.MENU.03 — two primary actions; Aurix Premium is the hero.
+               Language/currency moved to Configuración → Preferencias. -->
+          <!-- ACCOUNT-CENTER-V1 — seis destinos, cada uno abre DIRECTAMENTE su sección
+               del modal de configuración ya existente (data-account-section = data-pane).
+               Sin pantalla intermedia: no hay una opción "Configuración" genérica. -->
+          <button class="menu-item" data-account-section="account"       role="menuitem" data-i18n="acProfile">Perfil</button>
+          <button class="menu-item" data-account-section="notifications" role="menuitem" data-i18n="acNotifications">Notificaciones</button>
+          <button class="menu-item" data-account-section="prefs"         role="menuitem" data-i18n="acPreferences">Preferencias</button>
+          <!-- M.04 — ACCOUNT-CENTER-V1 publicó seis destinos y dejó fuera `plan`: la
+               sección Membresía existía (data-pane="plan"), con su pestaña en el rail y
+               su tarjeta, pero ninguna entrada del menú la abría. Posición decidida por
+               el founder: después de Preferencias, igual que en el rail. -->
+          <button class="menu-item" data-account-section="plan"          role="menuitem" data-i18n="settingsPlanTitle">Membresía</button>
+          <button class="menu-item" data-account-section="data"          role="menuitem" data-i18n="acSecurity">Seguridad</button>
+          <button class="menu-item" data-account-section="help"          role="menuitem" data-i18n="acHelp">Ayuda y soporte</button>
+          <div class="menu-divider"></div>
+          <button id="menuExit" class="menu-item menu-item--danger" data-i18n="menuLogout" role="menuitem">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+
+      <section class="dashboard-top hero-card">
+
+        <div class="hero-left">
+          <!-- AURIX-DASH-V1: elevated interior zone (label → value → meta) -->
+          <div class="summary-hero-zone">
+          <div class="summary-label card-title" data-i18n="totalValue">Patrimonio invertible</div>
+          <div class="summary-total" id="totalValue">$0.00</div>
+          <div class="summary-perf" id="summaryPerf" style="display:none"></div>
+          <div class="summary-meta-row">
+            <div class="summary-meta">
+              <span id="assetCount">0 activos</span>
+              <span class="summary-divider">·</span>
+              <span class="update-indicator">
+                <span class="update-dot" id="updateDot"></span>
+                <span id="updateText" data-i18n="noPrices">precios no cargados</span>
+              </span>
+              <!-- SAVE-INDICATOR-1: subtle autosave status. Hidden until
+                   a save cycle has actually started, so brand-new sessions
+                   never see it. State machine lives in _setSaveStatus(). -->
+              <span class="save-indicator" id="saveStatus" aria-live="polite" hidden></span>
+
+            </div>
+            <!-- Mobile FAB — inline with "activos · actualizado", hidden on desktop -->
+            <div class="portfolio-actions-mobile">
+              <button class="fab-trigger" id="portfolioFab">+</button>
+            </div>
+          </div>
+          <!-- AURIX-DASH-V3: the health signal now lives INSIDE the wealth
+               capsule — structure: label → value → meta → health. A premium
+               gradient divider (CSS) separates the capsule from the add buttons.
+               renderAurixSignal() fills state/tone and hides it on empty. -->
+          <!-- DSH.DONUT.02 — pill restored to its original design; the micro-donut is now a
+               fully INDEPENDENT component to its right (own button, own click handler, never
+               part of the pill / its Intelligence navigation). Desktop only (≤768px hidden). -->
+          <div class="aurix-signal-row">
+          <section class="aurix-signal aurix-signal--health" id="aurixSignal" role="button" tabindex="0" hidden>
+            <div class="aurix-signal-icon" aria-hidden="true">
+              <span class="aurix-signal-dot"></span>
+            </div>
+            <div class="aurix-signal-body">
+              <span class="aurix-signal-msg" id="aurixSignalMsg"></span>
+            </div>
+            <button type="button" class="aurix-signal-cta" id="aurixSignalCta">
+              <span id="aurixSignalCtaLabel" data-i18n="signalHealthCta">Ver análisis</span>
+              <span class="aurix-signal-cta-arrow" aria-hidden="true">›</span>
+            </button>
+          </section>
+            <button type="button" class="micro-composition-donut" id="microCompositionDonut"
+                    aria-label="Ver composición de cartera" title="Ver composición de cartera">
+              <svg class="mcd-ring" viewBox="0 0 50 50" width="50" height="50" aria-hidden="true">
+                <circle class="mcd-track" cx="25" cy="25" r="19" pathLength="100"></circle>
+                <g class="mcd-segs"></g>
+              </svg>
+            </button>
+          </div><!-- /.aurix-signal-row -->
+          </div><!-- /.summary-hero-zone -->
+
+          <div class="summary-footer">
+            <div class="summary-actions">
+              <button class="btn-summary-action btn-primary" id="btnAdd" data-i18n="addAsset">+ Añadir activo</button>
+              <button class="btn-summary-action btn-secondary" id="btnAddLiquidity" data-i18n="addLiquidity">+ Añadir liquidez</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title card-title" data-i18n="evolution">Evolución del patrimonio</div>
+              <span class="chart-change" id="chartChange"></span>
+              <span class="chart-baseline-note" id="chartBaselineNote" hidden></span>
+            </div>
+            <div class="chart-controls">
+              <div class="perf-toggle">
+                <button class="perf-btn active" data-perf="%">%</button>
+                <button class="perf-btn" id="perfCurrBtn" data-perf="curr">€</button>
+              </div>
+              <div class="range-toggle">
+                <button class="range-btn active" data-range="24h">24H</button>
+                <button class="range-btn" data-range="7d">7D</button>
+                <button class="range-btn" data-range="30d">30D</button>
+                <button class="range-btn" data-range="1y" data-i18n="range1y">1A</button>
+                <button class="range-btn" data-range="all" data-i18n="rangeAll">TOTAL</button>
+              </div>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <!-- AURIX-CHART-LOADING-PREMIUM-1 — premium loading skin (grid + ghost line).
+                 Baked into the markup so the chart area is NEVER an empty dark rectangle,
+                 even before the V2 engine + lightweight-charts finish loading. Sits behind
+                 the canvas/host; fades out via [data-chart-state="ready"]. Visual only. -->
+            <div class="chart-loading-skin" aria-hidden="true">
+              <svg class="chart-loading-skin__line" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <path class="chart-loading-skin__area"   d="M0,30 C14,26 24,31 38,23 C52,15 66,20 80,15 C88,12 94,14 100,13 L100,40 L0,40 Z"/>
+                <path class="chart-loading-skin__stroke" d="M0,30 C14,26 24,31 38,23 C52,15 66,20 80,15 C88,12 94,14 100,13"/>
+              </svg>
+            </div>
+            <canvas id="portfolioChart"></canvas>
+            <div class="chart-no-data" id="chartNoData" style="display:none">
+              <span class="chart-no-data-title" data-i18n="emptyChartTitle">Tu evolución aparecerá aquí</span>
+              <span class="chart-no-data-body"  data-i18n="emptyChartBody">cuando añadas activos.</span>
+            </div>
+            <div class="chart-tooltip" id="chartTooltip">
+              <div class="chart-tooltip-time"></div>
+              <div class="chart-tooltip-val"></div>
+            </div>
+          </div>
+
+          <!-- DSH.07 — PERFORMANCE SNAPSHOT (desktop ≥769 only). Replaces the
+               legacy evolution chart's VISUAL surface. The .chart-wrap above is
+               kept in the DOM (canvas drives mobile V2 sync + boot gate) but is
+               hidden on desktop via CSS; this module is the visible content.
+               Filled by _dshRenderPerfSnapshot(); starts as an elegant skeleton
+               so the area is never an empty rectangle while data loads. -->
+          <div class="perf-snapshot" id="perfSnapshot">
+            <div class="perf-info">
+              <div class="perf-skel perf-skel-head"></div>
+              <div class="perf-skel perf-skel-sub"></div>
+              <div class="perf-metrics-skel">
+                <div class="perf-skel perf-skel-cell"></div>
+                <div class="perf-skel perf-skel-cell"></div>
+                <div class="perf-skel perf-skel-cell"></div>
+                <div class="perf-skel perf-skel-cell"></div>
+              </div>
+            </div>
+            <div class="perf-compo">
+              <div class="perf-skel perf-skel-donut"></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <section class="distribution-section" id="distributionSection" style="display:none">
+        <div class="portfolio-combined-card">
+          <div class="distribution-panel">
+            <div class="section-title card-title" data-i18n="distribution">Distribución del patrimonio</div>
+            <div class="distribution-inner">
+              <div class="donut-wrap">
+                <canvas id="donutChart"></canvas>
+                <div class="donut-center-label">
+                  <div class="donut-center-val" id="donutCenterVal"></div>
+                  <div class="donut-center-sub" id="donutCenterSub"></div>
+                </div>
+              </div>
+              <div class="distribution-legend" id="distributionLegend"></div>
+            </div>
+          </div>
+          <div class="watchlist-section">
+            <div class="section-title card-title" data-i18n="watchlistTitleCaps">LISTA DE SEGUIMIENTO</div>
+            <div class="watchlist-inner-card">
+              <div id="trackingContent"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Mobile-only portfolio slider (hidden on desktop via CSS) ── -->
+      <div class="portfolio-slider-card">
+      <div class="portfolio-mobile-slider" id="portfolioMobileSlider">
+        <div class="mobile-slider-track" id="mobileSliderTrack">
+
+          <!-- Slide 1: chart -->
+          <div class="mobile-slide mobile-slide-chart">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title card-title" data-i18n="evolution">Evolución del patrimonio</div>
+                <span class="chart-baseline-note" id="chartBaselineNoteMobile" hidden></span>
+              </div>
+              <div class="chart-controls">
+                <!-- RC5-B FASE 2 — perf return moved BELOW the %/€ selector as premium micro-subtext -->
+                <div class="perf-unit-block">
+                  <div class="perf-toggle">
+                    <button class="perf-btn active" data-perf="%">%</button>
+                    <button class="perf-btn" data-perf="curr">€</button>
+                  </div>
+                  <span class="chart-change" id="chartChangeMobile"></span>
+                </div>
+                <div class="range-toggle">
+                  <button class="range-btn active" data-range="24h">24H</button>
+                  <button class="range-btn" data-range="7d">7D</button>
+                  <button class="range-btn" data-range="30d">30D</button>
+                  <button class="range-btn" data-range="1y" data-i18n="range1y">1A</button>
+                  <button class="range-btn" data-range="all" data-i18n="rangeAll">TOTAL</button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-wrap mobile-chart-wrap">
+              <!-- AURIX-CHART-LOADING-PREMIUM-1 — premium loading skin (mobile surface). -->
+              <div class="chart-loading-skin" aria-hidden="true">
+                <svg class="chart-loading-skin__line" viewBox="0 0 100 40" preserveAspectRatio="none">
+                  <path class="chart-loading-skin__area"   d="M0,30 C14,26 24,31 38,23 C52,15 66,20 80,15 C88,12 94,14 100,13 L100,40 L0,40 Z"/>
+                  <path class="chart-loading-skin__stroke" d="M0,30 C14,26 24,31 38,23 C52,15 66,20 80,15 C88,12 94,14 100,13"/>
+                </svg>
+              </div>
+              <canvas id="portfolioChartMobile"></canvas>
+              <div class="chart-no-data" id="chartNoDataMobile" style="display:none">
+                <span class="chart-no-data-title" data-i18n="emptyChartTitle">Tu evolución aparecerá aquí</span>
+                <span class="chart-no-data-body"  data-i18n="emptyChartBody">cuando añadas activos.</span>
+              </div>
+              <!-- WealthSnapshotCurve — single shared component. Covers the legacy
+                   canvas/V2 chart on mobile; filled by renderWealthCurve(). -->
+              <div class="wsc-host" id="wealthCurveMobile"></div>
+            </div>
+          </div>
+
+          <!-- Slide 2: donut distribution -->
+          <div class="mobile-slide mobile-slide-donut">
+            <div class="section-title card-title" data-i18n="distribution">Distribución del patrimonio</div>
+            <div class="distribution-inner mobile-distribution-inner">
+              <div class="donut-wrap mobile-donut-wrap">
+                <canvas id="donutChartMobile"></canvas>
+                <div class="donut-center-label">
+                  <div class="donut-center-val" id="donutCenterValMobile"></div>
+                  <div class="donut-center-sub" id="donutCenterSubMobile"></div>
+                </div>
+              </div>
+              <div class="distribution-legend" id="distributionLegendMobile"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="mobile-slider-dots">
+          <span class="m-dot active"></span>
+          <span class="m-dot"></span>
+        </div>
+      </div>
+      </div>
+
+      <section class="categories-section" id="categoriesSection" style="display:none">
+        <div class="categories-grid" id="categoriesGrid"></div>
+      </section>
+
+      <!-- §B · «Tus planes»: las plantillas GUARDADAS de Workspace, vistas desde
+           el Dashboard. Nace vacía y oculta a propósito: sin Premium confirmado
+           `updateDashboardPlans()` no escribe nada aquí — ni hueco, ni candado,
+           ni teaser. Es una VISTA del almacén de Workspace; no persiste nada y
+           no suma un euro al patrimonio. -->
+      <section class="wspl-sec" id="wsPlansSection" style="display:none"></section>
+      <!-- DESCUBRIMIENTO (sólo plan Free confirmado). Nace oculta y vacía: un
+           usuario Free no debe tener en el DOM ni un dato de documentos, y un
+           plan sin resolver no debe pintar ni promo ni guardados. Su owner es
+           `updateDashboardDiscover`, hermano de `updateDashboardPlans`, y los
+           dos se excluyen por construcción. -->
+      <section class="wsdisc-sec" id="dashDiscoverSection" style="display:none"></section>
+
+      <section class="assets-section" id="assetsSection">
+        <div class="section-header">
+          <h2 data-i18n="myAssets" id="assetsSectionTitle">Mis activos</h2>
+          <div class="section-filter-indicator" id="sectionFilterIndicator" style="display:none">
+            <button class="assets-back-btn" id="assetsBackBtn">
+              <span>←</span>
+              <span data-i18n="backAll">Todos</span>
+            </button>
+            <span class="section-filter-name" id="sectionFilterName"></span>
+          </div>
+          <button class="btn-add-context" id="btnAddContext" style="display:none">+ Añadir</button>
+        </div>
+
+        <div class="assets-list" id="assetsList">
+          <!-- AURIX-EMPTY-1: premium activation card. Replaces the bare
+               “no assets” line with a guided first-action block. JS
+               binds clicks below — no duplicated add logic. -->
+          <div class="empty-state empty-state--activation" id="emptyState">
+            <div class="empty-state-aurora" aria-hidden="true">
+              <div class="empty-state-orb"></div>
+            </div>
+            <h3 class="empty-state-title" data-i18n="emptyActivationTitle">Empieza creando tu cartera</h3>
+            <p class="empty-state-body" data-i18n="emptyActivationBody">Añade tu primer activo para ver rendimiento, distribución e insights.</p>
+            <div class="empty-state-actions">
+              <button type="button" class="empty-cta empty-cta--primary" data-empty-action="add-asset" data-i18n="emptyCtaPrimary">Añadir activo</button>
+              <button type="button" class="empty-cta empty-cta--secondary" data-empty-action="add-liquidity" data-i18n="emptyCtaSecondary">Añadir liquidez</button>
+            </div>
+            <div class="empty-state-quickstart">
+              <span class="empty-state-quickstart-label" data-i18n="emptyQuickStart">Empieza con</span>
+              <div class="empty-state-chips">
+                <button type="button" class="empty-chip" data-empty-chip="btc"  data-i18n="emptyChipBtc">Bitcoin</button>
+                <button type="button" class="empty-chip" data-empty-chip="aapl" data-i18n="emptyChipAapl">Apple</button>
+                <button type="button" class="empty-chip" data-empty-chip="spy"  data-i18n="emptyChipSpy">SPY ETF</button>
+                <button type="button" class="empty-chip" data-empty-chip="cash" data-i18n="emptyChipCash">Liquidez</button>
+                <button type="button" class="empty-chip" data-empty-chip="gold" data-i18n="emptyChipGold">Oro</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────── AURIX-ASSET-DETAIL-1 · own screen (not modal) ─────────── -->
+      <section class="asset-detail" id="assetDetailSection" style="display:none" aria-label="Asset detail">
+        <div class="ad2-head">
+          <button class="ad2-back" id="adsBack" type="button"><span aria-hidden="true">←</span><span data-i18n="ad.back">Volver</span></button>
+          <div class="ad2-manage">
+            <button class="ad2-manage-btn" id="adsManageBtn" type="button" aria-haspopup="true" aria-expanded="false"><span data-i18n="ad.manage">Gestionar</span> <span aria-hidden="true">▾</span></button>
+            <div class="ad2-menu" id="adsManageMenu" role="menu" hidden>
+              <button role="menuitem" type="button" data-ad-act="buy"  data-i18n="ad.buy">Comprar</button>
+              <button role="menuitem" type="button" data-ad-act="sell" data-i18n="ad.sell">Vender</button>
+              <button role="menuitem" type="button" data-ad-act="tx"   data-i18n="ad.viewTx">Ver transacciones</button>
+              <button role="menuitem" type="button" data-ad-act="del" class="ad2-menu-danger" data-i18n="ad.delete">Eliminar activo</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ad2-hero">
+          <span class="ad2-badge" id="adsBadge" aria-hidden="true"></span>
+          <div class="ad2-id">
+            <span class="ad2-name" id="adsName"></span>
+            <span class="ad2-ticker" id="adsTicker"></span>
+          </div>
+          <div class="ad2-value" id="adsValue">—</div>
+        </div>
+
+        <div class="ad2-metrics">
+          <div class="ad2-metric"><span class="ad2-k" data-i18n="ad.qty">Cantidad</span><span class="ad2-v" id="adsQty">—</span></div>
+          <div class="ad2-metric"><span class="ad2-k" data-i18n="ad.avgBuy">Precio medio de compra</span><span class="ad2-v" id="adsAvg">—</span></div>
+          <div class="ad2-metric"><span class="ad2-k" data-i18n="ad.gainLoss">Ganancia / Pérdida</span><span class="ad2-v" id="adsGl">—</span></div>
+          <div class="ad2-metric"><span class="ad2-k" data-i18n="ad.weightCat">Peso en categoría</span><span class="ad2-v" id="adsWeight">—</span></div>
+        </div>
+
+        <!-- Evolución: prepared block. Live per-asset chart → AURIX-ASSET-EVOLUTION-CHART-1 -->
+        <div class="ad2-block ad2-evo">
+          <div class="ad2-block-head">
+            <h3 data-i18n="ad.evolution">Evolución</h3>
+            <div class="ad2-evo-filters" aria-hidden="true">
+              <button type="button" class="is-active">7D</button><button type="button">30D</button><button type="button">YTD</button><button type="button">ALL</button>
+            </div>
+          </div>
+          <div class="ad2-evo-body" id="adsEvo"><span class="ad2-muted" data-i18n="ad.insufficient">Histórico insuficiente</span></div>
+        </div>
+
+        <div class="ad2-block ad2-history" id="adsHistoryBlock">
+          <div class="ad2-block-head"><h3 data-i18n="ad.history">Historial</h3></div>
+          <div class="ad2-history-list" id="adsHistory"></div>
+        </div>
+
+        <div class="ad2-block ad2-insights">
+          <div class="ad2-block-head"><h3 data-i18n="ad.insights">Insights</h3></div>
+          <div class="ad2-insights-list" id="adsInsights"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Hero view — full-screen overlay, shown on demand -->
+    <div id="hero-view" hidden>
+      <section class="hero" id="heroSection">
+        <div class="hero-fade"></div>
+        <div class="hero-core">
+          <div class="orb-wrapper">
+            <div class="hero-glow"></div>
+            <canvas id="orb-canvas" class="orb-canvas"></canvas>
+          </div>
+          <div class="hero-copy">
+            <p class="hero-text" id="heroText">
+              Tu patrimonio, bajo control.
+            </p>
+            <button class="hero-cta" id="heroCtaBtn">
+              VER RENDIMIENTO
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <canvas id="aurora-bg"></canvas>
+    <div class="top-fade"></div>
+    <div class="tab-placeholder" id="tabPlaceholder" style="display:none"></div>
+    <div id="aurixWorkspace" class="aurix-workspace" style="display:none"></div>
+
+    <nav class="bottom-nav" id="bottomNav">
+      <div class="item active" data-tab="home">
+        <svg viewBox="0 0 24 24"><path d="M4 11L12 4l8 7"/><path d="M6 10v8h4v-5h4v5h4v-8"/></svg>
+      </div>
+      <div class="item" data-tab="market">
+        <svg viewBox="0 0 24 24"><path d="M4 16l5-5 4 3 7-8"/><path d="M20 6v4h-4"/></svg>
+      </div>
+      <div class="item" data-tab="search" title="Search" data-i18n-title="tipSearch">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.6-4.6"/></svg>
+      </div>
+      <div class="item" data-tab="intelligence" title="Intelligence" data-i18n-title="tipIntelligence">
+        <svg viewBox="0 0 24 24"><path d="M5 21V13"/><path d="M12 21V6"/><path d="M19 21V10"/></svg>
+      </div>
+      <div class="item" data-tab="workspace" title="Workspace" data-i18n-title="tipWorkspace">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- Modal: Añadir activo -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" data-step="picker">
+      <span class="sheet-handle" aria-hidden="true"></span>
+
+      <!-- ADD-V2.1: Step 1 — premium type picker. Routes to the existing
+           flows (selectAsset / liquidityForm / enterRealEstateMode). No
+           submit / persistence logic touched. Toggled via data-step on .modal. -->
+      <section class="add-v2-picker" id="addV2Picker">
+        <div class="add-v2-picker-head">
+          <h3 data-i18n="addV2_picker_title">¿Qué quieres añadir?</h3>
+          <button class="modal-close" id="addV2PickerClose" type="button" aria-label="Close">✕</button>
+        </div>
+        <p class="add-v2-picker-sub" data-i18n="addV2_picker_sub">Elige el tipo de patrimonio que quieres registrar.</p>
+        <!-- ONBOARDING-V2 (FASE 1) — premium category selector. The generic "Activo de inversión"
+             is split into Acciones / Criptomonedas / Fondos·ETF; "Oro físico" → "Metales". Shared by
+             the onboarding first-asset flow AND the dashboard "+" add modal. The search box only
+             appears AFTER a category is chosen (Step 2), never on this selector. -->
+        <div class="add-v2-grid">
+          <button type="button" class="add-v2-card" data-pick="stocks" aria-label="Acciones">
+            <span class="add-v2-icon" aria-hidden="true">▤</span>
+            <span class="add-v2-text">
+              <span class="add-v2-title" data-i18n="addV2_pick_stocks_title">Acciones</span>
+              <span class="add-v2-sub" data-i18n="addV2_pick_stocks_sub">Apple, Microsoft, Nvidia…</span>
+            </span>
+            <span class="add-v2-chevron" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="add-v2-card" data-pick="crypto" aria-label="Criptomonedas">
+            <span class="add-v2-icon" aria-hidden="true">◈</span>
+            <span class="add-v2-text">
+              <span class="add-v2-title" data-i18n="addV2_pick_crypto_title">Criptomonedas</span>
+              <span class="add-v2-sub" data-i18n="addV2_pick_crypto_sub">Bitcoin, Ethereum, Solana…</span>
+            </span>
+            <span class="add-v2-chevron" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="add-v2-card" data-pick="fund" aria-label="Fondos / ETF">
+            <span class="add-v2-icon" aria-hidden="true">▦</span>
+            <span class="add-v2-text">
+              <span class="add-v2-title" data-i18n="addV2_pick_fund_title">Fondos / ETF</span>
+              <span class="add-v2-sub" data-i18n="addV2_pick_fund_sub">Vanguard, iShares, SPDR…</span>
+            </span>
+            <span class="add-v2-chevron" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="add-v2-card" data-pick="metal" aria-label="Metales">
+            <span class="add-v2-icon" aria-hidden="true">◉</span>
+            <span class="add-v2-text">
+              <span class="add-v2-title" data-i18n="addV2_pick_metal_title">Metales</span>
+              <span class="add-v2-sub" data-i18n="addV2_pick_metal_sub">Oro, plata, lingotes, monedas y joyería</span>
+            </span>
+            <span class="add-v2-chevron" aria-hidden="true">›</span>
+          </button>
+          <!-- data-pick="liquidity" routes through openLiquidityModal (a FORM — importe/divisa/tipo),
+               never straight to the success screen. -->
+          <button type="button" class="add-v2-card" data-pick="liquidity" aria-label="Liquidez">
+            <span class="add-v2-icon" aria-hidden="true">$</span>
+            <span class="add-v2-text">
+              <span class="add-v2-title" data-i18n="addV2_pick_liquidity_title">Liquidez</span>
+              <span class="add-v2-sub" data-i18n="addV2_pick_liquidity_sub">Efectivo, cuentas y capital disponible</span>
+            </span>
+            <span class="add-v2-chevron" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="add-v2-card" data-pick="real_estate" aria-label="Inmuebles">
+            <span class="add-v2-icon" aria-hidden="true">⌂</span>
+            <span class="add-v2-text">
+              <span class="add-v2-title" data-i18n="addV2_pick_re_title">Inmuebles</span>
+              <span class="add-v2-sub" data-i18n="addV2_pick_re_sub">Vivienda, propiedad o renta mensual</span>
+            </span>
+            <span class="add-v2-chevron" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="add-v2-card is-disabled" data-pick="other" disabled aria-disabled="true" aria-label="Otros activos (próximamente)">
+            <span class="add-v2-icon" aria-hidden="true">⋯</span>
+            <span class="add-v2-text">
+              <span class="add-v2-title" data-i18n="addV2_pick_other_title">Otros activos</span>
+              <span class="add-v2-sub add-v2-soon" data-i18n="addV2_pick_other_sub">Próximamente</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <!-- AURIX-METALS-ADD-SHEET-FIX — metal selection sheet. "+ Añadir metal" no
+           longer jumps straight to gold; it opens this picker. Shown only on
+           data-step="metal-picker". Options are rendered from the metals registry
+           in app.js (currently Oro + Plata; copper deferred until HG=F spot pricing
+           is wired). Reuses the premium .add-v2-picker / .add-v2-card styling. -->
+      <section class="add-v2-picker" id="addV2MetalPicker">
+        <div class="add-v2-picker-head">
+          <h3 data-i18n="metalPicker_title">Añadir metal</h3>
+          <button class="modal-close" id="addV2MetalPickerClose" type="button" aria-label="Close">✕</button>
+        </div>
+        <p class="add-v2-picker-sub" data-i18n="metalPicker_sub">Elige el metal que quieres registrar.</p>
+        <div class="add-v2-grid" id="addV2MetalOptions"></div>
+      </section>
+
+      <div class="modal-header">
+        <button class="add-v2-back" id="addV2Back" type="button" aria-label="Back" data-i18n-aria="addV2_back">‹</button>
+        <div class="modal-title-block">
+          <h3 data-i18n="modalAddTitle">Añadir activo</h3>
+          <p class="modal-subtitle" id="addV2HeaderSub" hidden></p>
+        </div>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+
+      <!-- ADD-FLOW-ARCH-1: removed the Activo / Liquidez toggle. The
+           asset modal is purely an asset-discovery surface — liquidity
+           is added through its own dedicated modal (openLiquidityModal). -->
+
+      <form id="assetForm" class="modal-body">
+        <!-- ADD-V4.2: 2-column layout wrapper. Mobile collapses to a single
+             stack; desktop in asset mode renders left=search / right=
+             preview+qty+CTA. Submit handler unchanged — wrapper is purely
+             presentational. -->
+        <div class="add-v2-left">
+
+        <!-- Buscador -->
+        <div id="searchWrap">
+          <div id="searchInputWrap" class="search-form-group">
+            <div class="search-field-wrap">
+              <input type="text" id="assetSearch" data-i18n-ph="searchAssetPH" placeholder="Buscar activo..." autocomplete="off" spellcheck="false">
+              <button type="button" class="search-clear" id="searchClear" style="display:none" tabindex="-1">✕</button>
+            </div>
+            <div class="asset-suggestions" id="assetSuggestions"></div>
+          </div>
+          <div class="search-filters" id="searchFilters">
+            <button type="button" class="filter-btn active" data-filter="all"         data-i18n="filterAll">Todos</button>
+            <button type="button" class="filter-btn" data-filter="crypto"            data-i18n="filterCrypto">Cripto</button>
+            <button type="button" class="filter-btn" data-filter="stock"             data-i18n="filterStock">Acciones</button>
+            <button type="button" class="filter-btn" data-filter="etf"              data-i18n="filterEtf">ETF / Fondos</button>
+            <button type="button" class="filter-btn" data-filter="metal"            data-i18n="filterMetal">Metales</button>
+            <button type="button" class="filter-btn" data-filter="real_estate"      data-i18n="filterRE">Inmuebles</button>
+          </div>
+          <div class="selected-chip" id="selectedChip" style="display:none">
+            <span class="chip-badge" id="chipBadge"></span>
+            <div class="chip-info">
+              <div class="chip-name" id="chipName"></div>
+              <div class="chip-sub"  id="chipSub"></div>
+            </div>
+            <span class="chip-price" id="chipPrice"></span>
+            <button type="button" class="chip-clear" id="chipClear">✕</button>
+          </div>
+          <span class="lookup-status" id="lookupStatus"></span>
+
+          <!-- Helper hint visible only when no input and no chip (mobile sheet) -->
+          <div class="search-empty-hint" id="searchEmptyHint" data-i18n="searchEmptyHint">
+            Busca un activo por nombre, ticker o ISIN.
+          </div>
+
+          <!-- ADD-V2.2: quick picks + recents for the asset mode. JS renders
+               the chip rows on Step-2 entry and hides them once a chip is
+               selected. Tap routes through the existing selectAsset flow. -->
+          <div class="add-v2-quick" id="addV2Quick">
+            <div class="add-v2-quick-section" id="addV2RecentSection" hidden>
+              <div class="add-v2-quick-label" data-i18n="addV2_quick_recent">Recientes</div>
+              <div class="add-v2-chips" id="addV2RecentChips"></div>
+            </div>
+            <div class="add-v2-quick-section">
+              <div class="add-v2-quick-label" data-i18n="addV2_quick_popular">Populares</div>
+              <div class="add-v2-chips" id="addV2PopularChips"></div>
+            </div>
+          </div>
+
+          <!-- ADD-V2.2: advanced options toggle. Promoted from mobile-only
+               to all viewports in asset mode — keeps ISIN one tap away
+               without dominating Step 2. Original id preserved so the
+               mobile collapsing logic from ADD-ASSET-MOBILE-1 still works. -->
+          <button type="button" class="isin-toggle-mobile" id="isinToggleMobile" aria-expanded="false">
+            <span class="isin-toggle-icon" aria-hidden="true">+</span>
+            <span class="isin-toggle-label" data-i18n="addV2_advanced">Opciones avanzadas</span>
+          </button>
+
+          <!-- ISIN entry — secondary option, always visible in search mode -->
+          <div class="isin-or-wrap" id="isinOrWrap">
+            <div class="form-or-divider"><span data-i18n="orLabel">o</span></div>
+            <div class="form-group form-group--isin">
+              <label for="isinInput">
+                <span data-i18n="isinLabel">ISIN</span>
+                <span class="label-optional" data-i18n="isinOptional"> (opcional)</span>
+              </label>
+              <input type="text" id="isinInput" data-i18n-ph="isinPH"
+                     placeholder="IE00B4L5Y983" maxlength="12"
+                     autocomplete="off" spellcheck="false">
+              <span class="isin-status" id="isinStatus"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual asset fields (shown when valid ISIN is entered) -->
+        <div id="manualFields" style="display:none">
+          <div class="form-group">
+            <label for="manualName" data-i18n="manualNameLabel">Nombre del activo</label>
+            <input type="text" id="manualName" data-i18n-ph="manualNamePH"
+                   placeholder="iShares Core MSCI World" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label data-i18n="manualTypeLabel">Tipo de activo</label>
+            <div class="type-toggle" id="manualTypeToggle">
+              <button type="button" class="type-btn" data-mtype="stock" data-i18n="manualTypeStock">Acciones</button>
+              <button type="button" class="type-btn active" data-mtype="etf" data-i18n="manualTypeEtf">ETF/Fondo</button>
+              <button type="button" class="type-btn" data-mtype="crypto" data-i18n="manualTypeCrypto">Cripto</button>
+              <button type="button" class="type-btn" data-mtype="other" data-i18n="manualTypeOther">Otros</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="manualCurrLabel">Moneda</label>
+            <div class="type-toggle" id="manualCurrToggle">
+              <button type="button" class="type-btn active" data-mcurr="USD">$ USD</button>
+              <button type="button" class="type-btn" data-mcurr="EUR">€ EUR</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="manualPrice">
+              <span data-i18n="manualPriceLabel">Precio por unidad</span><span class="label-optional" data-i18n="manualPriceOptional"> (opcional)</span>
+            </label>
+            <input type="text" inputmode="decimal" id="manualPrice"
+                   placeholder="0.00" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Real estate: name (visible solo en modo inmueble) -->
+        <div class="form-group" id="reNameGroup" style="display:none">
+          <label for="reName" data-i18n="reName">Nombre del inmueble</label>
+          <input type="text" id="reName" data-i18n-ph="reNamePH" placeholder="ej. Apartamento Madrid" autocomplete="off">
+        </div>
+
+        <!-- Real estate: currency (visible solo en modo inmueble) -->
+        <div class="form-group" id="reCurrGroup" style="display:none">
+          <label data-i18n="currency">Moneda</label>
+          <div class="type-toggle">
+            <button type="button" class="re-curr-btn active" data-curr="EUR">€ EUR</button>
+            <button type="button" class="re-curr-btn" data-curr="USD">$ USD</button>
+          </div>
+        </div>
+
+        <!-- Real estate: monthly rent (visible solo en modo inmueble) -->
+        <div class="form-group" id="reRentGroup" style="display:none">
+          <label for="reRent" data-i18n="reRentLabel">Renta mensual</label>
+          <input type="text" inputmode="decimal" id="reRent" placeholder="0" autocomplete="off">
+          <span class="input-hint" data-i18n="reRentHint">Opcional</span>
+        </div>
+
+        <!-- GOLD-V4.1: Premium physical-gold add flow.
+             - Market reference card (spot per gram / oz).
+             - "¿Qué tienes?" group: purity (retail labels) + unit + qty.
+             - Valuation mode: Spot / Resale, with buyer profile under
+               resale mapping to the existing margin field (5/8/15%).
+             - One clean summary card replaces the old dual-panel.
+             No formula or persistence changes. The legacy
+             #karatGroup / #goldUnitGroup / #goldMarginChips nodes are
+             kept (hidden) so old handlers stay no-ops; new buttons live
+             inside #goldSection and use delegated handlers. -->
+        <div class="form-group form-group--gold" id="goldSection" style="display:none" data-gold-type="" data-gold-qty="0">
+
+          <!-- GOLD-UX-PREMIUM-REBUILD STEP 1 — tipo de oro -->
+          <div class="gold-field-block gold-field-block--type">
+            <div class="gold-field-label" data-i18n="gold_type_label">¿Qué tipo de oro tienes?</div>
+            <div class="gold-type-row" id="goldTypeRow" role="radiogroup">
+              <button type="button" class="gold-type-chip" data-gold-type="jewelry">
+                <span class="gold-type-icon" aria-hidden="true">◐</span>
+                <span class="gold-type-name" data-i18n="gold_type_jewelry">Joyería</span>
+              </button>
+              <button type="button" class="gold-type-chip" data-gold-type="coin">
+                <span class="gold-type-icon" aria-hidden="true">●</span>
+                <span class="gold-type-name" data-i18n="gold_type_coin">Monedas</span>
+              </button>
+              <button type="button" class="gold-type-chip" data-gold-type="bar">
+                <span class="gold-type-icon" aria-hidden="true">▬</span>
+                <span class="gold-type-name" data-i18n="gold_type_bar">Lingote</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- GOLD-UX-PREMIUM-REBUILD STEP 2 — pureza del oro.
+               All five purity tiers are visible upfront; the previous
+               contextual filter + "Ver más quilates" advanced disclosure
+               are gone because they made common karats feel hidden. The
+               "No lo sé" tile lets a non-expert user proceed; JS maps it
+               conservatively to 18K. -->
+          <div class="gold-field-block" id="goldKaratBlock">
+            <div class="gold-field-label" data-i18n="gold_karat_label">Pureza del oro</div>
+            <div class="gold-field-sub" data-i18n="gold_karat_sub">Selecciona la pureza aproximada.</div>
+            <div class="gold-purity-grid" id="goldPurityGrid">
+              <button type="button" class="gold-chip" data-gold-karat="24">
+                <span class="gold-chip-title">24K</span>
+                <span class="gold-chip-sub" data-i18n="gold_purity_24_sub">Oro puro · ~99.9%</span>
+              </button>
+              <button type="button" class="gold-chip" data-gold-karat="22">
+                <span class="gold-chip-title">22K</span>
+                <span class="gold-chip-sub" data-i18n="gold_purity_22_sub">Alta pureza · ~91.6%</span>
+              </button>
+              <button type="button" class="gold-chip is-active" data-gold-karat="18">
+                <span class="gold-chip-title">18K</span>
+                <span class="gold-chip-sub" data-i18n="gold_purity_18_sub">Joyería común · ~75%</span>
+              </button>
+              <button type="button" class="gold-chip" data-gold-karat="14">
+                <span class="gold-chip-title">14K</span>
+                <span class="gold-chip-sub" data-i18n="gold_purity_14_sub">Pureza media · ~58.5%</span>
+              </button>
+              <button type="button" class="gold-chip" data-gold-karat="10">
+                <span class="gold-chip-title">10K</span>
+                <span class="gold-chip-sub" data-i18n="gold_purity_10_sub">Pureza baja · ~41.7%</span>
+              </button>
+              <button type="button" class="gold-chip gold-chip--unknown" data-gold-karat-unknown="1">
+                <span class="gold-chip-title" data-i18n="gold_purity_unknown_title">No lo sé</span>
+                <span class="gold-chip-sub" data-i18n="gold_purity_unknown_sub">Usaremos 18K</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 3: cantidad — unit + amount stay together. -->
+          <div class="gold-field-block">
+            <div class="gold-field-label" data-i18n="gold_quantity_label">Cantidad</div>
+            <div class="gold-unit-row" id="goldUnitRow">
+              <button type="button" class="gold-pill is-active" data-gold-unit="g"  data-i18n="gramUnit">g</button>
+              <button type="button" class="gold-pill"            data-gold-unit="oz" data-i18n="ozUnit">oz troy</button>
+              <button type="button" class="gold-pill"            data-gold-unit="kg" data-i18n="kgUnit">kg</button>
+            </div>
+          </div>
+
+          <!-- Quantity anchor — #qtyGroup is moved here in gold mode so the
+               three "What do you own?" inputs (purity/unit/qty) stay
+               visually grouped, then restored on exit. -->
+          <div id="goldQtyAnchor"></div>
+
+          <!-- GOLD-UX-PREMIUM-REBUILD — estimate card. Anchors the flow.
+               Amount reads with an ≈ prefix to signal "indicative", the
+               meta below it follows the spec format "[qty] · [purity] ·
+               [purity %]", and a small spot-basis line confirms the
+               price source. The card auto-reveals once qty is valid via
+               #goldSection[data-gold-qty="1"] in CSS. -->
+          <div class="gold-summary-card" id="goldSummaryCard">
+            <div class="gold-summary-label" data-i18n="gold_summary_label">Valor estimado hoy</div>
+            <div class="gold-summary-amount" id="goldSummaryAmount">—</div>
+            <div class="gold-summary-context" id="goldSummaryContext"></div>
+            <div class="gold-summary-meta" id="goldSummaryMeta" data-i18n="gold_summary_meta_spot">Precio spot internacional actualizado</div>
+            <div class="gold-summary-spot" id="goldSummarySpotRef" hidden></div>
+            <div class="gold-summary-disclaimer" id="goldSummaryDisclaimer" hidden data-i18n="gold_disclaimer">Estimación orientativa, no garantía de compra.</div>
+          </div>
+
+          <!-- GOLD-UX-PREMIUM-REBUILD — "Ajustar escenario de venta".
+               Buyer profile pills are demoted entirely behind this
+               disclosure. By default the user only sees a clean spot
+               estimate; advanced users drill in to flip the scenario
+               (Optimista / Mercado / Conservador → existing 5/8/15
+               margins so submit-time persistence is unchanged). -->
+          <div class="gold-adjust-block" id="goldBuyerBlock">
+            <button type="button" class="gold-adjust-toggle gold-more-toggle gold-more-toggle--subtle" id="goldBuyerToggle" aria-expanded="false" aria-controls="goldAdjustPanel">
+              <span data-i18n="gold_adjust_estimate">Ajustar escenario de venta</span>
+              <span class="gold-more-icon" aria-hidden="true">›</span>
+            </button>
+            <div class="gold-adjust-panel" id="goldAdjustPanel" hidden>
+              <div class="gold-adjust-eyebrow" data-i18n="gold_value_label">Escenario</div>
+              <div class="gold-buyer-row" id="goldBuyerRow">
+                <button type="button" class="gold-pill" data-gold-buyer="premium" data-margin-internal="5"  data-i18n="gold_buyer_premium">Optimista</button>
+                <button type="button" class="gold-pill is-active" data-gold-buyer="standard" data-margin-internal="8" data-i18n="gold_buyer_standard">Mercado</button>
+                <button type="button" class="gold-pill" data-gold-buyer="conservative" data-margin-internal="15" data-i18n="gold_buyer_conservative">Conservador</button>
+              </div>
+              <!-- Internal-only spot/resale mode driver; flipped to
+                   "resale" the moment the user touches a scenario pill
+                   so the same valuation math fires without forcing
+                   another decision on them. -->
+              <div class="gold-mode-row" id="goldModeRow" hidden>
+                <button type="button" class="gold-pill is-active" data-gold-mode="spot"  data-i18n="gold_value_spot">Valor spot</button>
+                <button type="button" class="gold-pill"            data-gold-mode="resale" data-i18n="gold_value_resale">Venta estimada</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- GOLD-UX-2: market reference demoted to the bottom of the
+               flow. Compact secondary card — the primary value the user
+               cares about is their estimated holding value above. -->
+          <div class="gold-market-card gold-market-card--compact" id="goldMarketRef">
+            <div class="gold-market-head">
+              <span class="gold-market-eyebrow" data-i18n="gold_market_label">Precio internacional del oro</span>
+            </div>
+            <div class="gold-market-price" id="goldSpotLine">—</div>
+            <div class="gold-market-meta" id="goldSpotSecondary" data-i18n="gold_market_meta_sub">Referencia 24K · ajustada por pureza</div>
+          </div>
+
+        </div>
+
+        <!-- Legacy karat / unit / margin chip groups kept hidden so any
+             external handler that still queries these IDs stays a no-op. -->
+        <div class="form-group" id="karatGroup" style="display:none" aria-hidden="true">
+          <div class="type-toggle type-toggle--wrap" id="karatToggle">
+            <button type="button" class="type-btn" data-karat="10">10K</button>
+            <button type="button" class="type-btn" data-karat="14">14K</button>
+            <button type="button" class="type-btn active" data-karat="18">18K</button>
+            <button type="button" class="type-btn" data-karat="21">21K</button>
+            <button type="button" class="type-btn" data-karat="22">22K</button>
+            <button type="button" class="type-btn" data-karat="24">24K</button>
+          </div>
+        </div>
+        <div class="form-group" id="goldUnitGroup" style="display:none" aria-hidden="true">
+          <div class="type-toggle type-toggle--wrap" id="goldUnitToggle">
+            <button type="button" class="type-btn active" data-unit="g">g</button>
+            <button type="button" class="type-btn"        data-unit="oz">oz troy</button>
+            <button type="button" class="type-btn"        data-unit="kg">kg</button>
+          </div>
+        </div>
+
+          <!-- Desktop live preview panel. Reads from existing selected
+               state (selectedDbAsset / pendingPrice / pendingCurrency)
+               via _addV4RenderPreview. No new pricing logic.
+               SPEC FINAL-LAYOUT: the asset preview lives in the LEFT column
+               (under the selected asset); the RIGHT column is the form only.
+               Moved markup only — same id/handlers; mobile hides it (≤900) so
+               the mobile stack order is unchanged. -->
+          <div class="add-v2-preview" id="addV2PreviewCard">
+            <div class="add-v2-preview-empty" id="addV2PreviewEmpty">
+              <span class="add-v2-preview-empty-icon" aria-hidden="true">◉</span>
+              <span class="add-v2-preview-empty-text" data-i18n="addV2_preview_empty">Selecciona un activo para ver vista previa.</span>
+            </div>
+            <div class="add-v2-preview-body" id="addV2PreviewBody" hidden>
+              <div class="add-v2-preview-head">
+                <div class="add-v2-preview-name" id="addV2PreviewName"></div>
+                <span class="add-v2-preview-type" id="addV2PreviewType"></span>
+              </div>
+              <div class="add-v2-preview-meta">
+                <span class="add-v2-preview-ticker" id="addV2PreviewTicker"></span>
+                <span class="add-v2-preview-currency" id="addV2PreviewCurrency"></span>
+              </div>
+              <div class="add-v2-preview-price-label" data-i18n="addV2_preview_price">Precio en vivo</div>
+              <div class="add-v2-preview-price" id="addV2PreviewPrice">—</div>
+              <div class="add-v2-preview-value-label" data-i18n="addV2_preview_value">Posición estimada</div>
+              <div class="add-v2-preview-value" id="addV2PreviewValue">—</div>
+            </div>
+          </div>
+
+        </div><!-- /.add-v2-left -->
+
+        <div class="add-v2-right">
+
+          <!-- Cantidad (visible tras seleccionar activo) -->
+          <div class="form-group" id="qtyGroup" style="display:none">
+            <label for="assetQty" id="qtyLabel" data-i18n="qty">Cantidad</label>
+            <input type="text" inputmode="decimal" id="assetQty" placeholder="0" autocomplete="off">
+
+            <!-- PURCHASE-PRICE-V1 — optional real purchase price. When set it becomes the
+                 first Buy transaction (single source of truth for cost basis / avg price /
+                 P&L). Empty ⇒ live price is used. Revealed only for priced market/DB assets
+                 (stock/etf/fund/crypto); hidden for gold (spot-based) + real-estate. Nested in
+                 #qtyGroup so it sits between Quantity and Custodian and shares its show/hide. -->
+            <div class="form-group" id="purchasePriceGroup" style="display:none">
+              <label for="assetPurchasePrice">
+                <span data-i18n="purchasePriceLabel">Precio de compra</span><span id="purchasePriceUnit" class="pp-unit"></span><span class="label-optional" data-i18n="purchasePriceOptional"> (opcional)</span>
+              </label>
+              <input type="text" inputmode="decimal" id="assetPurchasePrice" placeholder="0.00" autocomplete="off">
+              <span class="input-hint" data-i18n="purchasePriceHint">Precio medio pagado por unidad.</span>
+            </div>
+
+            <!-- WL.2 (Fase 2 — Wealth Location): optional location/custodian.
+                 Nested inside #qtyGroup so it shares its show/hide. Pure
+                 metadata — never affects valuation. -->
+            <div class="wl-loc-field">
+              <label for="assetLocationType" class="wl-loc-field-label" data-i18n="wlLocLabel">Ubicación / custodio (opcional)</label>
+              <div class="wl-loc-field-inputs">
+                <select id="assetLocationType" class="wl-loc-field-type">
+                  <option value="" data-i18n="wlLocTypeNone">Tipo…</option>
+                  <option value="broker" data-i18n="wlLocTypeBroker">Broker</option>
+                  <option value="exchange" data-i18n="wlLocTypeExchange">Exchange</option>
+                  <option value="wallet" data-i18n="wlLocTypeWallet">Wallet</option>
+                  <option value="bank" data-i18n="wlLocTypeBank">Banco</option>
+                  <option value="custodian" data-i18n="wlLocTypeCustodian">Custodio</option>
+                  <option value="other" data-i18n="wlLocTypeOther">Otro</option>
+                </select>
+                <input type="text" id="assetLocationProvider" class="wl-loc-field-provider"
+                       list="assetLocationProviders" autocomplete="off"
+                       placeholder="Nombre (ej. Interactive Brokers)" data-i18n-placeholder="wlLocProviderPh">
+                <datalist id="assetLocationProviders">
+                  <option value="Interactive Brokers"></option>
+                  <option value="Trade Republic"></option>
+                  <option value="Kraken"></option>
+                  <option value="Binance"></option>
+                  <option value="Coinbase"></option>
+                  <option value="Santander"></option>
+                  <option value="BBVA"></option>
+                  <option value="Ledger"></option>
+                  <option value="Wallet propia"></option>
+                </datalist>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADD-ASSET-MOBILE-FOOTER-1 — groups "Valor estimado" + CTA into one action
+               footer. On mobile it becomes an OPAQUE sticky footer (the estimated value no
+               longer scrolls away and the CTA never reads as a translucent overlay over
+               "Ubicación / custodio"). On desktop this wrapper is `display: contents`, so the
+               two children flow EXACTLY as before → desktop is pixel-identical. -->
+          <div class="add-v2-footer">
+          <div class="form-preview" id="formPreview" style="display:none">
+            <span data-i18n="estimatedVal">Valor estimado:</span> <strong id="previewTotal">$0.00</strong>
+          </div>
+
+          <div class="modal-cta">
+            <!-- GOLD-UX-PREMIUM-REBUILD — compact secondary line above
+                 the CTA (mobile + desktop) so the user sees what they're
+                 about to add at a glance. Hidden until the gold flow is
+                 valid; rendered by _updateGoldCtaState. -->
+            <div class="gold-cta-summary" id="goldCtaSummary" hidden></div>
+            <button type="submit" form="assetForm" class="btn-submit" id="btnSubmitAsset" style="display:none" data-i18n="addToPortfolio">Añadir a cartera</button>
+          </div>
+          </div><!-- /.add-v2-footer -->
+        </div><!-- /.add-v2-right -->
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Reducir cantidad -->
+  <div class="modal-overlay" id="reduceOverlay">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <h3 data-i18n="modalReduceTitle">Reducir posición</h3>
+        <button class="modal-close" id="reduceClose">✕</button>
+      </div>
+
+      <form id="reduceForm" class="modal-body">
+
+        <div class="reduce-asset-info" id="reduceAssetInfo"></div>
+
+        <div class="form-group">
+          <label for="reduceQty" data-i18n="reduceQtyLabel">Cantidad a restar</label>
+          <input type="text" inputmode="decimal" id="reduceQty" placeholder="0" autocomplete="off">
+          <span class="input-hint" id="reduceMax"></span>
+        </div>
+
+        <div class="reduce-preview" id="reducePreview">
+          <!-- P0 §25 — EL VALOR DE LA OPERACIÓN, no sólo el de lo que queda. El usuario
+               teclea unidades y necesita saber cuánto dinero mueve eso. -->
+          <div class="reduce-preview-row is-op" id="previewOpRow" hidden>
+            <span id="previewOpLabel">Valor de la operación</span>
+            <strong id="previewOpValue">—</strong>
+          </div>
+          <div class="reduce-preview-row">
+            <span data-i18n="qtyRemaining">Cantidad restante</span>
+            <strong id="previewQtyLeft">—</strong>
+          </div>
+          <div class="reduce-preview-row">
+            <span data-i18n="valueRemaining">Valor restante</span>
+            <strong id="previewValueLeft">—</strong>
+          </div>
+        </div>
+
+        <div class="reduce-warning" id="reduceWarning" data-i18n="removeWarning">
+          El activo se eliminará al llegar a 0.
+        </div>
+
+        <p class="modal-note" data-i18n="tradeRecordNote" data-trade-note>Aurix registra la operación en tu cartera; no mueve dinero ni descuenta tu liquidez.</p>
+        <div class="reduce-error" id="reduceError"></div>
+
+        <button type="submit" class="btn-submit btn-submit--orange" data-i18n="confirmReduce">Confirmar reducción</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Añadir a posición -->
+  <div class="modal-overlay" id="addOverlay">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <h3 data-i18n="modalAddPosTitle">Añadir a posición</h3>
+        <button class="modal-close" id="addClose">✕</button>
+      </div>
+
+      <form id="addForm" class="modal-body">
+
+        <div class="reduce-asset-info" id="addAssetInfo"></div>
+
+        <div class="form-group">
+          <label for="addQty" id="addQtyLabel">Cantidad a añadir</label>
+          <input type="text" inputmode="decimal" id="addQty" placeholder="0" autocomplete="off">
+        </div>
+
+        <div class="reduce-preview" id="addPreview">
+          <div class="reduce-preview-row">
+            <span data-i18n="newTotalQty">Nueva cantidad total</span>
+            <strong id="previewAddQtyTotal">—</strong>
+          </div>
+          <div class="reduce-preview-row">
+            <span data-i18n="newTotalValue">Nuevo valor total</span>
+            <strong id="previewAddValueTotal">—</strong>
+          </div>
+        </div>
+
+        <p class="modal-note" data-i18n="tradeRecordNote" data-trade-note>Aurix registra la operación en tu cartera; no mueve dinero ni descuenta tu liquidez.</p>
+        <div class="reduce-error" id="addError"></div>
+
+        <button type="submit" class="btn-submit btn-submit--green" data-i18n="confirm">Confirmar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Añadir liquidez
+       ADD-FLOW-ARCHITECTURE-2: dedicated transactional surface. No
+       asset search, no discovery UI — strictly currency → amount →
+       optional source → confirm. Visual accent (.modal--liquidity)
+       distinguishes it from the discovery-focused asset modal. -->
+  <div class="modal-overlay" id="liquidityOverlay">
+    <div class="modal modal--sm modal--liquidity">
+      <div class="modal-header">
+        <h3 data-i18n="modalLiqTitle">Añadir liquidez</h3>
+        <button class="modal-close" id="liquidityClose">✕</button>
+      </div>
+      <form id="liquidityForm" class="modal-body">
+        <div class="form-group">
+          <label data-i18n="currency">Moneda</label>
+          <div class="type-toggle">
+            <button type="button" class="liq-btn active" data-curr="EUR">€ EUR</button>
+            <button type="button" class="liq-btn" data-curr="USD">$ USD</button>
+          </div>
+          <input type="hidden" id="liquidityCurrency" value="EUR">
+        </div>
+        <div class="form-group">
+          <label for="liquidityQty" data-i18n="amount">Importe</label>
+          <input type="text" inputmode="decimal" id="liquidityQty" placeholder="0" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>
+            <span data-i18n="liqSourceLabel">Origen</span>
+            <span class="label-optional" data-i18n="liqSourceOptional"> (opcional)</span>
+          </label>
+          <div class="liq-source-row" id="liqSourceRow">
+            <button type="button" class="liq-source-pill active" data-source=""    data-i18n="liqSourceNone">Sin especificar</button>
+            <button type="button" class="liq-source-pill"        data-source="bank"   data-i18n="liqSourceBank">Banco</button>
+            <button type="button" class="liq-source-pill"        data-source="broker" data-i18n="liqSourceBroker">Bróker</button>
+            <button type="button" class="liq-source-pill"        data-source="wallet" data-i18n="liqSourceWallet">Wallet</button>
+            <button type="button" class="liq-source-pill"        data-source="cash"   data-i18n="liqSourceCash">Reserva</button>
+          </div>
+          <input type="hidden" id="liquiditySource" value="">
+        </div>
+        <button type="submit" class="btn-submit btn-submit--green" data-i18n="addLiqBtn">Añadir liquidez</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Añadir transacción -->
+  <div class="modal-overlay" id="txOverlay">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <h3 data-i18n="txModalTitle">Añadir transacción</h3>
+        <button class="modal-close" id="txClose">✕</button>
+      </div>
+      <form id="txForm" class="modal-body">
+        <div class="form-group">
+          <label data-i18n="txTypeLabel">Tipo</label>
+          <div class="type-toggle" id="txTypeToggle">
+            <button type="button" class="type-btn active" data-txtype="buy" data-i18n="txTypeBuy">Compra</button>
+            <button type="button" class="type-btn" data-txtype="sell" data-i18n="txTypeSell">Venta</button>
+          </div>
+          <input type="hidden" id="txTypeHidden" value="buy">
+        </div>
+        <div class="form-group">
+          <label for="txQty" data-i18n="qty">Cantidad</label>
+          <input type="text" inputmode="decimal" id="txQty" placeholder="0" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="txPrice" data-i18n="txPriceLabel">Precio por unidad</label>
+          <input type="text" inputmode="decimal" id="txPrice" placeholder="0,00" autocomplete="off">
+        </div>
+        <!-- P0 §25 — LO QUE CUESTA O LO QUE SE COBRA, en vivo. Aquí sólo había unidades y
+             precio por unidad: el usuario tenía que multiplicar de cabeza para saber cuánto
+             dinero movía una compra o una venta. -->
+        <div class="reduce-preview" id="txPreview" hidden>
+          <div class="reduce-preview-row is-op">
+            <span id="txOpLabel">Valor de la operación</span>
+            <strong id="txOpValue">—</strong>
+          </div>
+          <div class="reduce-preview-row">
+            <span id="txAfterQtyLabel">Cantidad resultante</span>
+            <strong id="txAfterQty">—</strong>
+          </div>
+          <div class="reduce-preview-row" id="txAfterValRow">
+            <span id="txAfterValLabel">Valor de la posición</span>
+            <strong id="txAfterVal">—</strong>
+          </div>
+        </div>
+        <p class="modal-note" data-i18n="tradeRecordNote" data-trade-note>Aurix registra la operación en tu cartera; no mueve dinero ni descuenta tu liquidez.</p>
+        <div class="reduce-error" id="txError"></div>
+        <button type="submit" class="btn-submit btn-submit--green" data-i18n="txSubmit">Añadir transacción</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Detalle de activo -->
+  <div class="modal-overlay" id="assetDetailOverlay">
+    <div class="modal modal--detail">
+      <div class="modal-header">
+        <h3 id="adName">—</h3>
+        <button class="modal-close" id="adClose">✕</button>
+      </div>
+      <div class="modal-body" id="adBody">
+        <div class="ad-summary">
+          <div class="ad-hero">
+            <div class="ad-hero-value" id="adValue">—</div>
+            <div class="ad-hero-label" id="adValueLabel" data-i18n="adValueLabel">Valor total</div>
+          </div>
+          <div class="ad-secondary">
+            <div class="ad-row">
+              <span class="ad-label" id="adPriceLabel" data-i18n="adPriceLabel">Precio</span>
+              <span class="ad-value" id="adPrice">—</span>
+            </div>
+            <div class="ad-row ad-row--pnl" id="adPnLRow">
+              <span class="ad-label">P&amp;L</span>
+              <span class="ad-value" id="adPnL">—</span>
+            </div>
+          </div>
+        </div>
+        <!-- CHART-6: AurixChart-engine slot for per-asset historical chart.
+             Hidden by default; populated by _aurixAssetMount() when the
+             feature flag is on AND the engine + adapters are loaded.
+             Flag off → slot stays hidden → modal looks exactly as today. -->
+        <div class="ad-chart-slot" id="adChartSlot" hidden>
+          <div class="ad-chart-ranges" id="adChartRanges"></div>
+          <!-- CHART-6B: subtle source / granularity line so users see
+               what they're looking at (CoinGecko · 5m, Yahoo · Diario,
+               Oro spot · Referencia de mercado, NAV diario). -->
+          <div class="ad-chart-meta" id="adChartMeta" hidden></div>
+          <div class="ad-chart-mount" id="adChartMount"></div>
+        </div>
+        <div class="ad-tx-section" id="adTxSection">
+          <div class="ad-tx-header">
+            <span id="adTxTitle" data-i18n="adTxLabel">Transacciones</span>
+          </div>
+          <div class="ad-tx-list" id="adTxList"></div>
+          <button class="btn-add-tx-detail" id="adAddTx" data-i18n="adAddBtn">+ Añadir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────── AURIX-ASSET-MANAGE-OVERLAY-1 · compact Gestionar sheet ─────── -->
+  <div class="manage-overlay" id="assetManageOverlay" aria-hidden="true">
+    <div class="manage-sheet" role="dialog" aria-modal="true" aria-labelledby="mngName">
+      <div class="manage-head">
+        <span class="manage-badge" id="mngBadge" aria-hidden="true"></span>
+        <div class="manage-id">
+          <span class="manage-name" id="mngName"></span>
+          <span class="manage-ticker" id="mngTicker"></span>
+        </div>
+        <button class="manage-x" id="mngClose" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="manage-actions">
+        <button class="manage-act" type="button" data-mng-act="buy"><span class="manage-act-ic">+</span><span data-i18n="ad.buy">Comprar</span></button>
+        <button class="manage-act" type="button" data-mng-act="sell"><span class="manage-act-ic">−</span><span data-i18n="ad.sell">Vender</span></button>
+        <button class="manage-act" type="button" data-mng-act="tx" aria-expanded="false"><span class="manage-act-ic">≣</span><span data-i18n="ad.viewTx">Ver transacciones</span><span class="manage-chevron" aria-hidden="true">▾</span></button>
+        <button class="manage-act manage-act--danger" type="button" data-mng-act="del"><span class="manage-act-ic">✕</span><span data-i18n="ad.delete">Eliminar activo</span></button>
+      </div>
+      <div class="manage-tx" id="mngTx" hidden></div>
+    </div>
+  </div>
+
+  <script src="vendor/chart.umd.min.js"></script>
+  <!-- CHART-2: TradingView Lightweight Charts — engine library for the
+       isolated AurixChartCore prototype. Not yet wired to any production
+       surface; legacy Chart.js charts continue rendering unchanged.
+       `defer` so its absence (e.g. CDN miss) never blocks app boot;
+       AurixChartCore checks readiness before using it. -->
+  <script defer src="vendor/lightweight-charts.standalone.production.js"></script>
+  <script defer src="services/aurix-chart-core.js?v=24"></script>
+  <!-- CHART-3: historical data adapter layer. Pure infra — no UI consumer.
+       Loads `defer` so boot stays uninterrupted; safe even if absent. -->
+  <script defer src="services/chart-adapters.js?v=4"></script>
+  <script src="services/market.js"></script>
+  <script src="ai/insightEngine.js"></script>
+  <script src="config.js"></script>
+  <script src="services/ux.js"></script>
+  <script src="services/onboarding-engine.js?v=3"></script>
+  <!-- AURIX-PORTFOLIO-CHART-ENGINE-1 · Fase D: Portfolio Chart Engine (PCE).
+       Load order = engine → price-layer → net-worth → adapter (ascending deps).
+       `defer` so boot is uninterrupted; their globals are only used lazily at
+       render time, gated by window.__AURIX_PORTFOLIO_RECON (default OFF). With
+       the flag off these modules are inert — dashboard behaviour is unchanged. -->
+  <script defer src="services/portfolio-chart-engine.js?v=2"></script>
+  <script defer src="services/portfolio-price-layer.js?v=2"></script>
+  <script defer src="services/portfolio-net-worth.js?v=4"></script>
+  <script defer src="services/portfolio-reconstruction-adapter.js?v=1"></script>
+  <script>try{if(window.__AURIX_BOOT){window.__AURIX_BOOT.appJsRequested=true;window.__AURIX_BOOT.mark('app_js_requested');}}catch(_){}</script>
+  <script src="app.js?v=765"
+    onload="try{if(window.__AURIX_BOOT){window.__AURIX_BOOT.appJsLoaded=true;window.__AURIX_BOOT.mark('app_js_loaded');}}catch(_){}"
+    onerror="try{if(window.__AURIX_BOOT){window.__AURIX_BOOT.appJsLoadError=true;window.__AURIX_BOOT.mark('app_js_load_error');window.__AURIX_BOOT.errors.push('app.js failed to load (network/404/parse)');}}catch(_){}"></script>
+  <!-- AURIX-WEALTH-ENGINE-1: pure derived-financials façade (window.wealthEngine).
+       Loads after app.js so it can read its primitives. No consumers yet. -->
+  <script src="services/wealth-engine.js?v=2"></script>
+  <!-- AURIX-WEALTH-LEDGER-1: invisible event-ledger foundation (window.wealthLedger).
+       One-time idempotent backfill on 'aurix:portfolio-ready'. No write-path capture,
+       no UI, no DERIVED/RLS changes. -->
+  <script src="services/wealth-ledger.js?v=2"></script>
+  <script src="services/prices.js"></script>
+  <script src="aurora-bg.js?v=765"></script>
+  <script src="orb.js?v=765"></script>
+
+  <!-- Watchlist Modal -->
+  <div id="watchlist-modal" class="watchlist-modal hidden">
+    <div class="watchlist-modal-content">
+      <div class="watchlist-modal-header">
+        <h2 data-i18n="watchlistTitle">Lista de seguimiento</h2>
+        <div class="modal-actions">
+          <button class="add-button" id="watchlistAddBtn" onclick="toggleWatchlistEditMode()">+</button>
+          <button class="watchlist-modal-close" onclick="closeWatchlistModal()">✕</button>
+        </div>
+      </div>
+      <div class="watchlist-modal-body" id="watchlistModalBody"></div>
+      <div class="add-asset-panel hidden" id="addAssetPanel">
+        <input class="add-asset-input" id="addAssetInput" data-i18n-ph="searchAssetPH" placeholder="Buscar activo..." autocomplete="off" />
+        <div class="add-asset-results" id="addAssetResults"></div>
+      </div>
+    </div>
+  </div>
+<!-- GLOBAL-SEARCH-2: Global search overlay — premium command-center.
+     Desktop: centered 820px glass card with hero + sections. Mobile:
+     full-screen sheet, same hero, safe-area aware. Reuses existing
+     searchAllAssets pipeline; no provider, pricing or persistence
+     coupling. Keeps Add Asset modal as a separate surface. -->
+<div id="globalSearchOverlay" class="gs-overlay" hidden>
+  <div class="gs-shell" role="dialog" aria-modal="true" aria-labelledby="globalSearchHeroTitle">
+    <button class="gs-close" id="globalSearchClose" type="button" aria-label="Cerrar">✕</button>
+    <section class="gs-hero">
+      <h2 class="gs-hero-title" id="globalSearchHeroTitle" data-i18n="globalSearchHeroTitle">Buscar activos</h2>
+      <p class="gs-hero-sub" data-i18n="globalSearchHeroSub">Encuentra acciones, cripto, ETFs, fondos, índices y materias primas</p>
+      <label class="gs-input-wrap" for="globalSearchInput">
+        <svg class="gs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.6-4.6"/>
+        </svg>
+        <input id="globalSearchInput" type="text" autocomplete="off" spellcheck="false"
+               data-i18n-ph="globalSearchPH" placeholder="Busca BTC, Tesla, IWDA, Oro..." />
+      </label>
+    </section>
+    <div class="gs-body">
+      <div class="gs-empty" id="globalSearchEmpty">
+        <section class="gs-section" id="globalSearchRecentSection" hidden>
+          <div class="gs-section-label" data-i18n="globalSearchRecent">Recientes</div>
+          <div class="gs-chips" id="globalSearchRecentChips"></div>
+        </section>
+        <section class="gs-section">
+          <div class="gs-section-label" data-i18n="globalSearchTrending">Populares</div>
+          <div class="gs-chips" id="globalSearchTrending"></div>
+        </section>
+      </div>
+      <div class="gs-loading" id="globalSearchLoading" hidden>
+        <span class="gs-loading-dot" aria-hidden="true"></span>
+        <span data-i18n="globalSearchLoading">Buscando…</span>
+      </div>
+      <ul class="gs-results" id="globalSearchResults" hidden></ul>
+      <p class="gs-hint" id="globalSearchHint" hidden data-i18n="globalSearchNoResultsHint">No encontramos coincidencias. Prueba con otro nombre o ticker.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Global FAB menu — outside card, position: fixed via JS, never clipped -->
+<div id="fabMenuGlobal" class="fab-menu-global">
+  <button class="fab-option" data-action="asset" data-i18n="fabAddAsset">Añadir activo</button>
+  <button class="fab-option" data-action="liquidity" data-i18n="fabAddLiquidity">Añadir liquidez</button>
+</div>
+
+<!-- MARKET-4B: unified filters sheet (timeframe + sort). Bottom sheet
+     on mobile, centered popover on desktop via CSS. Body-level placement
+     keeps it free of market-screen re-render churn. -->
+<div class="mkt-filter-overlay" id="mktFilterOverlay" hidden>
+  <div class="mkt-filter-sheet" id="mktFilterSheet" role="dialog" aria-modal="true" aria-labelledby="mktFilterTitle">
+    <div class="mkt-filter-head">
+      <h3 class="mkt-filter-title" id="mktFilterTitle" data-i18n="mktFilterTitle">Filtros</h3>
+      <button type="button" class="mkt-filter-close" data-mkt-filter-close aria-label="Close">✕</button>
+    </div>
+    <div class="mkt-filter-section">
+      <div class="mkt-filter-section-label" data-i18n="mktFilterRendimiento">Rendimiento</div>
+      <div class="mkt-filter-pills" id="mktFilterTfRow">
+        <!-- MARKET-8: all five periods now hit real historical adapters
+             (Yahoo / CoinGecko via existing services). Soon-state markers
+             from MARKET-7 are gone; each row backfills its change% +
+             sparkline asynchronously through the shared cache. -->
+        <button type="button" class="mkt-filter-pill" data-mkt-tf="24H">24H</button>
+        <button type="button" class="mkt-filter-pill" data-mkt-tf="7D">7D</button>
+        <button type="button" class="mkt-filter-pill" data-mkt-tf="1M">1M</button>
+        <button type="button" class="mkt-filter-pill" data-mkt-tf="1Y">1Y</button>
+        <button type="button" class="mkt-filter-pill" data-mkt-tf="ALL">ALL</button>
+      </div>
+      <div class="mkt-filter-helper" id="mktFilterHelper" hidden></div>
+    </div>
+    <div class="mkt-filter-section">
+      <div class="mkt-filter-section-label" data-i18n="mktFilterSortLabel">Ordenar</div>
+      <div class="mkt-filter-sort-list" id="mktFilterSortRow">
+        <!-- MARKET-8 + RESET-6: "Destacados" is the post-reset default
+             and the first option. Deterministic ranking via the
+             _aurixMktFeaturedRank map (BTC/AAPL/SPY/XAU/SPX first per
+             type bucket, then alphabetical). -->
+        <!-- MARKET-INSTITUTIONAL-V1 §6 — juego completo de ordenaciones, también en móvil.
+             "Relevancia" respeta el ranking canónico (no reordena). Las dos opciones de
+             capitalización NO se ofrecen: su cobertura real es 0% y una opción que no
+             puede cumplirse no debe estar en la experiencia principal. La lógica de
+             ordenación por cap sigue en app.js, lista para cuando exista el dato. -->
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="relevance" data-i18n="mktSortRelevance">Relevancia</button>
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="featured"  data-i18n="mktSortFeatured">Destacados</button>
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="change"    data-i18n="mktSortChange">Mayor subida 24H</button>
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="change_asc" data-i18n="mktSortChangeAsc">Mayor caída 24H</button>
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="price"     data-i18n="mktSortPrice">Precio: mayor a menor</button>
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="price_asc" data-i18n="mktSortPriceAsc">Precio: menor a mayor</button>
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="name"      data-i18n="mktSortName">Nombre A–Z</button>
+        <button type="button" class="mkt-filter-sort-item" data-mkt-sort="watchlist" data-i18n="mktSortWatchlist">Seguimiento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MARKET-1B: market asset preview overlay. Opens on row click when
+     the feature flag is on. Reuses the .modal-overlay / .modal chrome
+     (radius, sheet behaviour, safe-area) shared by the rest of the app
+     so this surface inherits all prior MA-1/CHART-7A polish. -->
+<div class="modal-overlay" id="marketPreviewOverlay">
+  <div class="modal modal--mkt-preview">
+    <span class="sheet-handle" aria-hidden="true"></span>
+    <div class="modal-header">
+      <div class="mkt-prv-head">
+        <span class="mkt-prv-icon" id="mktPrvIcon"></span>
+        <div class="mkt-prv-id">
+          <div class="mkt-prv-name" id="mktPrvName">—</div>
+          <div class="mkt-prv-sub">
+            <span class="mkt-prv-symbol" id="mktPrvSymbol">—</span>
+            <span class="mkt-prv-badge" id="mktPrvBadge"></span>
+            <!-- MARKET-V2-02B — mercado y divisa. Los pinta el owner único del header
+                 desde el view model; si el campo no existe, el span queda oculto. -->
+            <span class="mkt-prv-submeta" id="mktPrvSubMeta" hidden></span>
+          </div>
+        </div>
+      </div>
+      <button class="modal-close" id="mktPrvClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mkt-prv-stats">
+        <div class="mkt-prv-price" id="mktPrvPrice">—</div>
+        <div class="mkt-prv-change" id="mktPrvChange"></div>
+        <!-- MARKET-V2-02B — a qué periodo corresponde esa variación. Sin esto la cifra
+             es ambigua: es el tercer nivel de la jerarquía, no un adorno. -->
+        <span class="mkt-prv-period" id="mktPrvPeriod" hidden></span>
+        <!-- Sólo se puebla si la fuente declara el dato retrasado. "Al día" no se
+             anuncia: es lo esperado y sería ruido. -->
+        <span class="mkt-prv-fresh" id="mktPrvFresh" hidden></span>
+      </div>
+      <div class="mkt-prv-ranges" id="mktPrvRanges"></div>
+      <div class="mkt-prv-meta"   id="mktPrvMeta" hidden></div>
+      <div class="mkt-prv-mount"  id="mktPrvMount"></div>
+    </div>
+    <div class="modal-cta mkt-prv-cta">
+      <button type="button" class="btn-secondary" id="mktPrvWatchBtn">★</button>
+      <button type="button" class="btn-submit"    id="mktPrvAddBtn"   data-i18n="addToPortfolio">Añadir a cartera</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS-1: General settings overlay. Body-level placement keeps it
+     free of screen re-render churn. Sections: account, plan, data, prefs. -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal modal--settings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-header">
+      <h3 id="settingsTitle" data-i18n="settingsTitle">Configuración</h3>
+      <button class="modal-close" id="settingsClose" aria-label="Cerrar" data-i18n-aria="ariaCloseModal">✕</button>
+    </div>
+    <!-- DSH.SETTINGS.01 — desktop/tablet: left nav rail + single visible pane.
+         Mobile collapses the rail and stacks every section vertically (CSS). -->
+    <div class="modal-body settings-body settings-body--nav">
+      <nav class="settings-nav" role="tablist" aria-label="Configuración" data-i18n-aria="ariaSettingsNav">
+        <button type="button" class="settings-nav-item is-current" role="tab" data-settings-pane="account" data-i18n="settingsAccount">Cuenta</button>
+        <button type="button" class="settings-nav-item" role="tab" data-settings-pane="prefs" data-i18n="settingsPrefsTitle">Preferencias</button>
+        <!-- SETTINGS-MOBILE-V2 — Membresía/Premium hidden for Launch 1 via the single
+             `html[data-aurix-premium-ui="off"]` owner; markup/handlers preserved for Launch 2. -->
+        <button type="button" class="settings-nav-item" role="tab" data-settings-pane="plan" data-i18n="settingsPlanTitle">Membresía</button>
+        <!-- ACCOUNT-CENTER-V1 — "Perfil inversor" deja de ser una entrada propia del rail:
+             vive dentro de Preferencias (mismo markup, sin duplicar owners). -->
+        <button type="button" class="settings-nav-item" role="tab" data-settings-pane="notifications" data-i18n="acNotifications">Notificaciones</button>
+        <button type="button" class="settings-nav-item" role="tab" data-settings-pane="help" data-i18n="acHelp">Ayuda y soporte</button>
+        <button type="button" class="settings-nav-item" role="tab" data-settings-pane="data" data-i18n="settingsData">Datos y seguridad</button>
+      </nav>
+      <div class="settings-panes">
+
+      <!-- 1 · CUENTA — Nombre / Email / Estado. Membresía + Build rows removed (V2);
+           display name shows as a value at rest, editable only on tapping edit. -->
+      <section class="settings-section is-active" data-pane="account" id="settingsSectionAccount">
+        <h4 class="settings-section-title"><span class="settings-sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><span data-i18n="settingsAccount">Cuenta</span></h4>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settingsDisplayName">Nombre visible</span>
+          <span class="settings-name-field">
+            <input type="text" id="settingsNameInput" class="settings-name-input" maxlength="40" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Nombre visible" data-i18n-aria="ariaDisplayName" readonly>
+            <button type="button" class="settings-name-edit" id="settingsNameEditBtn" aria-label="Editar nombre visible" data-i18n-aria="ariaEditDisplayName"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
+          </span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settingsEmail">Email</span>
+          <span class="settings-row-value settings-row-value--email" id="settingsAccountEmail">—</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settingsStatus">Estado</span>
+          <span class="settings-row-value" id="settingsAccountStatus" data-i18n="settingsStatusLocal">Local · sin sesión</span>
+        </div>
+      </section>
+
+      <!-- 2 · PREFERENCIAS — Idioma / Moneda (moved out of Cuenta). Same handlers
+           (data-lang / .menu-curr-btn) + persistence; segmented controls unchanged. -->
+      <section class="settings-section" data-pane="prefs" id="settingsSectionPrefs">
+        <h4 class="settings-section-title"><span class="settings-sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="10" cy="7" r="2.2"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2.2"/></svg></span><span data-i18n="settingsPrefsTitle">Preferencias</span></h4>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settingsLang">Idioma</span>
+          <div class="menu-pref-opts" role="group" aria-label="Idioma" data-i18n-aria="ariaLangGroup">
+            <button type="button" class="menu-item--lang menu-pref-opt" data-lang="es" aria-pressed="true">Español</button>
+            <button type="button" class="menu-item--lang menu-pref-opt" data-lang="en" aria-pressed="false">English</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settingsCurrency">Moneda base</span>
+          <div class="menu-pref-opts" role="group" aria-label="Moneda base" data-i18n-aria="ariaCurrencyGroup">
+            <button type="button" class="menu-curr-btn menu-pref-opt" data-currency="USD" aria-pressed="true">USD</button>
+            <button type="button" class="menu-curr-btn menu-pref-opt" data-currency="EUR" aria-pressed="false">EUR</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section" data-pane="plan" id="settingsSectionPlan">
+        <h4 class="settings-section-title"><span class="settings-sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><span data-i18n="settingsPlanTitle">Membresía</span></h4>
+        <div class="plan-card" id="planCardCurrent">
+          <div class="plan-card-head">
+            <span class="plan-card-tier" id="planTierName">Aurix Free</span>
+            <span class="settings-tier-chip" id="settingsTierChip" data-tier="free">FREE</span>
+            <span class="plan-card-badge" id="planTierBadge" data-i18n="settingsPlanCurrent">Plan actual</span>
+          </div>
+          <div class="plan-card-body">
+            <p class="plan-card-desc" id="planCurrentDesc" data-i18n="settingsPlanDescFree">Seguimiento completo de tu patrimonio. Sin límite de activos.</p>
+          </div>
+        </div>
+
+        <div class="plan-card plan-card--offer" id="planCardOffer">
+          <div class="plan-card-head">
+            <span class="plan-card-tier" data-i18n="settingsFounderName">Aurix Premium</span>
+            <!-- DSH.SETTINGS.04 — price removed; no price shown until it is final. -->
+          </div>
+          <div class="plan-card-body">
+            <p class="plan-card-desc" id="planOfferDesc" data-i18n="settingsFounderDesc">Acceso anticipado, herramientas avanzadas y ventajas premium.</p>
+            <button type="button" class="btn-submit btn-submit--plan" id="planFounderCta" data-i18n="settingsFounderCta">Conocer Aurix Premium</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS-INVESTOR-PROFILE-1 — editable investor profile.
+           Lets users who already finished onboarding refine their
+           tonal signal context without re-running the flow. Reuses
+           the existing AurixOnboarding.savePreferences API so the
+           persisted shape stays identical to the onboarding step. -->
+      <section class="settings-section" data-pane="profile" id="settingsSectionProfile">
+        <h4 class="settings-section-title"><span class="settings-sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/><circle cx="9" cy="8" r="2.4"/><circle cx="15" cy="16" r="2.4"/></svg></span><span data-i18n="settingsProfileTitle">Perfil inversor</span></h4>
+        <p class="settings-section-sub" data-i18n="settingsProfileSub">Ajusta cómo Aurix interpreta las señales de tu cartera.</p>
+
+        <!-- SETTINGS-MOBILE-V2 — summary-by-default. The summary button shows the
+             current value; tapping it reveals the existing chips (one group open at
+             a time) and collapses back after a choice. Chips/handlers/ids unchanged. -->
+        <div class="settings-profile-group" data-profile-facet="risk">
+          <button type="button" class="settings-profile-summary" aria-expanded="false">
+            <span class="settings-profile-summary-label" data-i18n="settingsProfileRisk">Tu estilo de inversión</span>
+            <span class="settings-profile-summary-value" data-profile-value="risk">—</span>
+            <span class="settings-profile-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+          <div class="settings-profile-chips" id="settingsRiskChips">
+            <button type="button" class="settings-profile-chip" data-settings-risk="conservative" data-i18n="onbRiskConservative">Conservador</button>
+            <button type="button" class="settings-profile-chip" data-settings-risk="balanced" data-i18n="onbRiskBalanced">Equilibrado</button>
+            <button type="button" class="settings-profile-chip" data-settings-risk="growth" data-i18n="onbRiskGrowth">Crecimiento</button>
+            <button type="button" class="settings-profile-chip" data-settings-risk="aggressive" data-i18n="onbRiskAggressive">Agresivo</button>
+          </div>
+        </div>
+
+        <div class="settings-profile-group" data-profile-facet="experience">
+          <button type="button" class="settings-profile-summary" aria-expanded="false">
+            <span class="settings-profile-summary-label" data-i18n="settingsProfileExperience">Experiencia</span>
+            <span class="settings-profile-summary-value" data-profile-value="experience">—</span>
+            <span class="settings-profile-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+          <div class="settings-profile-chips" id="settingsExperienceChips">
+            <button type="button" class="settings-profile-chip" data-settings-experience="beginner" data-i18n="settingsExperienceBeginner">Principiante</button>
+            <button type="button" class="settings-profile-chip" data-settings-experience="intermediate" data-i18n="settingsExperienceIntermediate">Intermedio</button>
+            <button type="button" class="settings-profile-chip" data-settings-experience="advanced" data-i18n="settingsExperienceAdvanced">Avanzado</button>
+            <button type="button" class="settings-profile-chip" data-settings-experience="professional" data-i18n="settingsExperienceProfessional">Profesional</button>
+          </div>
+        </div>
+
+        <div class="settings-profile-group" data-profile-facet="age">
+          <button type="button" class="settings-profile-summary" aria-expanded="false">
+            <span class="settings-profile-summary-label" data-i18n="settingsProfileAge">Etapa inversora</span>
+            <span class="settings-profile-summary-value" data-profile-value="age">—</span>
+            <span class="settings-profile-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+          <div class="settings-profile-chips settings-profile-chips--age" id="settingsAgeChips">
+            <button type="button" class="settings-profile-chip" data-settings-age="under_30" data-i18n="onbAgeUnder30">&lt;30</button>
+            <button type="button" class="settings-profile-chip" data-settings-age="age_30_45" data-i18n="onbAge30_45">30–45</button>
+            <button type="button" class="settings-profile-chip" data-settings-age="age_45_60" data-i18n="onbAge45_60">45–60</button>
+            <button type="button" class="settings-profile-chip" data-settings-age="over_60" data-i18n="onbAgeOver60">60+</button>
+            <button type="button" class="settings-profile-chip settings-profile-chip--ghost" data-settings-age="prefer_not_say" data-i18n="onbAgePreferNotSay">Prefiero no decirlo</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACCOUNT-CENTER-V1 — Notificaciones. V1 es sólo el contenedor visual con un
+           estado vacío honesto: no hay backend, ni programación, ni envío. El markup
+           queda listo para que en el futuro se inyecten avisos del equipo sin rehacer
+           la tarjeta. -->
+      <section class="settings-section" data-pane="notifications" id="settingsSectionNotifications">
+        <h4 class="settings-section-title"><span class="settings-sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10.3 21a2 2 0 003.4 0"/></svg></span><span data-i18n="acNotifications">Notificaciones</span></h4>
+        <div class="ac-empty" id="acNotificationsList">
+          <div class="ac-empty-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10.3 21a2 2 0 003.4 0"/></svg>
+          </div>
+          <div class="ac-empty-title" data-i18n="acNoNotifications">No tienes notificaciones</div>
+          <span class="ac-soon" data-i18n="acSoon">Próximamente</span>
+        </div>
+      </section>
+
+      <!-- ACCOUNT-CENTER-V1 — Ayuda y soporte. Un único destino real: abrir el cliente
+           de correo. No se adjunta diagnóstico ni ningún dato automáticamente. -->
+      <section class="settings-section" data-pane="help" id="settingsSectionHelp">
+        <h4 class="settings-section-title"><span class="settings-sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-2c1.2.8 1.1 2.2.2 3-.7.6-1.6 1-1.6 2"/><path d="M12 17h.01"/></svg></span><span data-i18n="acHelp">Ayuda y soporte</span></h4>
+        <div class="settings-actions">
+          <a class="settings-action" id="acSupportLink"
+             href="mailto:aurixsystemofficial@gmail.com">
+            <span class="settings-action-main">
+              <span class="settings-action-label" data-i18n="acContactSupport">Contactar con soporte</span>
+              <span class="settings-action-sub" data-i18n="acContactSupportSub">Se abrirá tu cliente de correo. No se adjunta ningún dato.</span>
+            </span>
+          </a>
+          <!-- M.04 · SOPORTE Y LEGALES PÚBLICOS. Tres páginas estáticas propias
+               (`support.html`, `privacy.html`, `terms.html`), accesibles SIN
+               sesión y con su propio CSS: no cargan la app. Van en pestaña
+               nueva con `rel="noopener"` para no sacar al usuario de su sesión
+               a mitad de lo que estaba haciendo. -->
+          <a class="settings-action" href="support.html" target="_blank" rel="noopener noreferrer">
+            <span class="settings-action-main">
+              <span class="settings-action-label" data-i18n="acSupportPage">Centro de soporte</span>
+              <span class="settings-action-sub" data-i18n="acSupportPageSub">Cómo contactar, qué contarnos y tu suscripción.</span>
+            </span>
+          </a>
+          <a class="settings-action" href="privacy.html" target="_blank" rel="noopener noreferrer">
+            <span class="settings-action-main">
+              <span class="settings-action-label" data-i18n="acPrivacy">Política de privacidad</span>
+              <span class="settings-action-sub" data-i18n="acPrivacySub">Qué datos trata Aurix y quién interviene.</span>
+            </span>
+          </a>
+          <a class="settings-action" href="terms.html" target="_blank" rel="noopener noreferrer">
+            <span class="settings-action-main">
+              <span class="settings-action-label" data-i18n="acTerms">Condiciones de servicio</span>
+              <span class="settings-action-sub" data-i18n="acTermsSub">Qué es Aurix, planes, renovación y cancelación.</span>
+            </span>
+          </a>
+        </div>
+      </section>
+
+      <!-- DSH.SETTINGS.05 — Preferencias section removed; Idioma/Moneda moved to
+           Cuenta. Datos y seguridad always last; reset stays destructive (red). -->
+      <section class="settings-section" data-pane="data" id="settingsSectionData">
+        <h4 class="settings-section-title"><span class="settings-sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/></svg></span><span data-i18n="settingsData">Datos y seguridad</span></h4>
+        <div class="settings-actions">
+          <!-- SPEC 67 — "Exportar datos" TEMPORARILY DISABLED before launch: kept in place + same
+               design, shown as "Próximamente" via `disabled` (mirrors #settingsImportBtn). Re-enable:
+               remove `disabled` and restore the sub to data-i18n="settingsExportSub".
+               M.06 — el subtítulo usa ahora `settingsComingSoon`, una clave NEUTRA. Antes pintaba
+               `settingsImportSub`, la clave de OTRA acción: el texto era correcto en los dos
+               idiomas, pero habilitar Importar habría cambiado el subtítulo de Exportar con ella. -->
+          <button type="button" class="settings-action" id="settingsExportBtn" disabled>
+            <span class="settings-action-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/></svg></span>
+            <span class="settings-action-text">
+              <span class="settings-action-label" data-i18n="settingsExport">Exportar datos</span>
+              <span class="settings-action-sub" data-i18n="settingsComingSoon">Próximamente</span>
+            </span>
+            <span class="settings-action-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+          <button type="button" class="settings-action" id="settingsImportBtn" disabled>
+            <span class="settings-action-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 20h14"/></svg></span>
+            <span class="settings-action-text">
+              <span class="settings-action-label" data-i18n="settingsImport">Importar datos</span>
+              <span class="settings-action-sub" data-i18n="settingsComingSoon">Próximamente</span>
+            </span>
+            <span class="settings-action-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+          <!-- SPEC PLATFORM-HARDENING.3 — discreet, user-safe technical diagnostics entry.
+               Opens #diagOverlay; generates a PII-free report via window.AurixDiagShare
+               (which reuses window.aurixDiagnosticsReport). Sits above the destructive reset. -->
+          <button type="button" class="settings-action" id="settingsDiagBtn">
+            <span class="settings-action-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 4-2 1v3l4 8H6l4-8V8L8 7z"/></svg></span>
+            <span class="settings-action-text">
+              <span class="settings-action-label" data-i18n="settingsDiag">Diagnóstico técnico</span>
+              <span class="settings-action-sub" data-i18n="settingsDiagSub">Genera un informe seguro para soporte</span>
+            </span>
+            <span class="settings-action-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+          <!-- DSH.SETTINGS.05 — reset stays last + red; no "Zona peligrosa" title. -->
+          <button type="button" class="settings-action settings-action--danger" id="settingsResetBtn">
+            <span class="settings-action-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg></span>
+            <span class="settings-action-text">
+              <span class="settings-action-label" data-i18n="settingsReset">Resetear cartera</span>
+              <span class="settings-action-sub" data-i18n="settingsResetSub">Borra activos, historial y seguimiento</span>
+            </span>
+            <span class="settings-action-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 6 · INFORMACIÓN TÉCNICA — Build moved to the end, discreet secondary text.
+           Always visible (not a hideable pane); sits below the active pane on desktop. -->
+      <div class="settings-techinfo">
+        <span class="settings-techinfo-label" data-i18n="settingsBuild">Build</span>
+        <span class="settings-techinfo-value" id="settingsBuildVersion">v1.0 · 2026.05</span>
+        <!-- Era un literal que nadie actualizaba: soporte no podía saber qué build tenía el usuario.
+             Se publica el MISMO identificador que el diagnóstico técnico (AURIX_BUILD, el que se sube en cada deploy). -->
+        <script>try{var _sbv=document.getElementById('settingsBuildVersion');if(_sbv&&window.AURIX_BUILD)_sbv.textContent=window.AURIX_BUILD;}catch(_){}</script>
+      </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M.06 · BLOQUE 9/10/11 — SUPERFICIE COMERCIAL RETIRADA. Aquí vivía la página
+     «Aurix Founder» con un precio anual obsoleto y un CTA «Early Access · Próximamente».
+     No era código muerto: el modal de función premium tenía un botón «Ver Aurix Founder»
+     por ENCIMA del real, así que cualquier usuario Free que tocara una capacidad Premium
+     recibía primero una oferta de un plan que no se vende, a un precio que ya no existe y
+     con un CTA que prometía que aún no se puede comprar — cuando Premium SÍ se compra.
+     El paywall canónico (openAurixPremiumModal) es la única ruta de compra y sus precios
+     salen del catálogo del servidor. El TIER «founder» sigue existiendo para las cuentas
+     que lo tengan; lo que se retira es su escaparate y su precio. -->
+
+<!-- Premium upgrade screen — el destino de una capacidad denegada. El gate real es
+     `hasFeature()` contra `public.aurix_entitlements()` (autoridad del servidor,
+     fail-closed): la vieja nota sobre ENFORCE_ENTITLEMENTS describía un interruptor
+     que ya no decidía nada y se retiró con él. -->
+<div class="modal-overlay" id="upgradeOverlay" aria-hidden="true">
+  <div class="modal modal--upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle">
+    <div class="modal-header">
+      <div class="modal-title-block">
+        <h3 id="upgradeTitle" data-i18n="upgradeTitle">Función premium</h3>
+        <p class="modal-subtitle" id="upgradeFeatureName"></p>
+      </div>
+      <button class="modal-close" id="upgradeClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body upgrade-body">
+      <p class="upgrade-lead" data-i18n="upgradeLead">Esta herramienta forma parte del plan premium de Aurix.</p>
+      <!-- M.04 — la ÚNICA ruta de compra desde un punto de conversión: abre el
+           paywall, que es donde viven los precios (del catálogo del servidor).
+           M.06 — y ahora es de verdad la única: el botón «Ver Aurix Founder» que
+           estaba AQUÍ ARRIBA ofrecía primero un plan retirado, a un precio obsoleto. -->
+      <button type="button" class="btn-submit btn-submit--plan" id="upgradePaywallBtn" data-i18n="pw_open">Ver Aurix Premium</button>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING-1: activation overlay. Dedicated chrome — does NOT reuse
+     #modalOverlay (which is the add-asset modal). State machine and
+     persistence live in services/onboarding-engine.js; UI wiring lives
+     in app.js (see _initOnboardingUI). -->
+<div class="modal-overlay onboarding-overlay" id="onboardingOverlay" aria-hidden="true">
+  <div class="modal modal--onboarding" role="dialog" aria-modal="true" aria-labelledby="onbTitle" data-step="WELCOME">
+    <div class="onb-progress" id="onbProgress" aria-hidden="true">
+      <span class="onb-progress-dot" data-step="WELCOME"></span>
+      <span class="onb-progress-dot" data-step="ACTIVATION"></span>
+    </div>
+    <p class="onb-progress-label" id="onbProgressLabel" aria-live="polite"></p>
+    <!-- ONBOARDING · CIERRE — el idioma ya se elige en el acceso; aquí queda un cambio discreto
+         ES|EN (también para quien entra sin pasar por el login). Usa `switchLang`, el owner único. -->
+    <div class="onb-langtoggle" role="group" aria-label="Idioma · Language">
+      <button type="button" class="onb-langtoggle-btn" data-onb-langswitch="es" lang="es" aria-pressed="false">ES</button>
+      <button type="button" class="onb-langtoggle-btn" data-onb-langswitch="en" lang="en" aria-pressed="false">EN</button>
+    </div>
+    <!-- ONBOARDING-EXCELLENCE-V1 — "Saltar" ejecutaba `completeOnboarding()`: un toque
+         accidental en la esquina cerraba el onboarding PARA SIEMPRE y el usuario podía
+         quedarse sin añadir su primer activo. Ahora es "Lo haré más tarde": difiere,
+         conserva el progreso y el onboarding se reanuda en la siguiente entrada. -->
+    <button type="button" class="onb-skip" id="onbSkipBtn" data-i18n="onbLater">Lo haré más tarde</button>
+
+    <!-- ONBOARDING · CIERRE — el paso LANGUAGE se retira (el estado guardado se migra a WELCOME en
+         el motor). El idioma se elige en el acceso y se cambia con el selector de la cabecera. -->
+    <!-- Step: WELCOME -->
+    <section class="onb-step" data-onb-step="WELCOME">
+      <!-- SPEC 45 WELCOME — convergence hero: scattered points merge into one Aurix core (once), a literal
+           "todo tu patrimonio, una sola visión". Decorative-safe (fixed-size box, transform/opacity only,
+           no layout impact), off under prefers-reduced-motion. -->
+      <div class="onb-welcome-hero" aria-hidden="true">
+        <span class="onb-wh-core"></span>
+        <span class="onb-wh-dot"></span>
+        <span class="onb-wh-dot"></span>
+        <span class="onb-wh-dot"></span>
+        <span class="onb-wh-dot"></span>
+        <span class="onb-wh-dot"></span>
+      </div>
+      <h2 id="onbTitle" class="onb-headline" data-i18n="onbWelcomeTitle">Todo tu patrimonio. Una sola visión.</h2>
+      <p class="onb-sub" data-i18n="onbWelcomeSub">Aurix reúne tus activos y transforma información dispersa en claridad patrimonial.</p>
+      <!-- ONBOARDING-EXCELLENCE-V1 — INTERESES FUSIONADOS EN LA BIENVENIDA.
+           Antes eran dos pantallas: una que sólo se leía (WELCOME) y otra que sólo
+           preguntaba (INTERESTS). La bienvenida sin decisión costaba un tap entero y
+           no producía nada. Ahora la misma pantalla dice qué es Aurix y deja elegir
+           inmediatamente qué controlar. El rail Unificar→Comprender→Decidir se
+           conserva porque encuadra la elección que viene justo debajo, no la retrasa.
+           El grid mantiene su id, sus `data-onb-interest` y su consumidor real
+           (`_aurixBuildStarterWatchlist`): cero cambio de datos. -->
+      <div class="onb-welcome-rail" aria-hidden="true">
+        <span class="onb-wr-step" data-i18n="onbWelcomeRail1">Unificar</span>
+        <span class="onb-wr-arrow">→</span>
+        <span class="onb-wr-step" data-i18n="onbWelcomeRail2">Comprender</span>
+        <span class="onb-wr-arrow">→</span>
+        <span class="onb-wr-step" data-i18n="onbWelcomeRail3">Decidir</span>
+      </div>
+      <!-- ONBOARDING · CIERRE — «¿Qué quieres controlar?» se retira: los intereses sólo sembraban la
+           lista de Market si se terminaba con la cartera vacía, que el recorrido normal nunca alcanza.
+           Las categorías quedan como EJEMPLOS no interactivos. Las preferencias ya guardadas no se tocan. -->
+      <ul class="onb-cat-examples" aria-label="Aurix reúne" data-i18n-aria="onbCatExamplesAria">
+        <li style="--onb-cat:#f08a3c" data-i18n="onbAssetStocks">Acciones</li>
+        <li style="--onb-cat:#4d8dff" data-i18n="onbAssetCrypto">Cripto</li>
+        <li style="--onb-cat:#2ec5d8" data-i18n="onbAssetEtf">ETFs</li>
+        <li style="--onb-cat:#e2b45a" data-i18n="onbAssetGold">Oro</li>
+        <li style="--onb-cat:#34d17e" data-i18n="onbAssetCash">Liquidez</li>
+        <li style="--onb-cat:#9b7dff" data-i18n="onbAssetRe">Inmuebles</li>
+      </ul>
+      <div class="onb-footer">
+        <button type="button" class="onb-cta onb-cta--primary" data-onb-next data-i18n="onbContinue">Continuar</button>
+      </div>
+    </section>
+
+    <!-- ONBOARDING-EXCELLENCE-V1 — INTERESTS / EXPERIENCE / PROFILE salen del flujo.
+         INTERESTS vive ahora dentro de WELCOME (arriba). EXPERIENCE y PROFILE se
+         retiran porque no gobernaban comportamiento: `experience` y `ageBand` no
+         tenían ningún consumidor, y `riskProfile` sólo matizaba el tono de una frase
+         — no justifica preguntarlo ANTES de haber entregado valor. Las secciones se
+         conservan en el DOM y siguen editables desde Ajustes, así que ningún dato ya
+         guardado se pierde ni cambia de forma; simplemente dejan de estar en `ORDER`. -->
+
+    <!-- Step: EXPERIENCE -->
+    <section class="onb-step" data-onb-step="EXPERIENCE">
+      <h2 class="onb-headline" data-i18n="onbExpTitle">¿Cómo te describirías?</h2>
+      <p class="onb-sub" data-i18n="onbExpSub">Opcional. Adaptaremos el detalle a tu nivel.</p>
+      <div class="onb-exp-grid">
+        <button type="button" class="onb-exp-card" data-onb-exp="beginner">
+          <span class="onb-exp-tag" data-i18n="onbExpTagBeginner">Nivel 1</span>
+          <span class="onb-exp-name" data-i18n="onbExpBeginner">Principiante</span>
+          <span class="onb-exp-desc" data-i18n="onbExpBeginnerDesc">Estoy empezando</span>
+        </button>
+        <button type="button" class="onb-exp-card" data-onb-exp="active">
+          <span class="onb-exp-tag" data-i18n="onbExpTagActive">Nivel 2</span>
+          <span class="onb-exp-name" data-i18n="onbExpActive">Inversor activo</span>
+          <span class="onb-exp-desc" data-i18n="onbExpActiveDesc">Invierto con regularidad</span>
+        </button>
+        <button type="button" class="onb-exp-card" data-onb-exp="advanced">
+          <span class="onb-exp-tag" data-i18n="onbExpTagAdvanced">Nivel 3</span>
+          <span class="onb-exp-name" data-i18n="onbExpAdvanced">Avanzado</span>
+          <span class="onb-exp-desc" data-i18n="onbExpAdvancedDesc">Conozco los mercados</span>
+        </button>
+      </div>
+      <div class="onb-footer onb-footer--split">
+        <button type="button" class="onb-cta onb-cta--ghost" data-onb-back data-i18n="onbBack">Atrás</button>
+        <button type="button" class="onb-cta onb-cta--primary" data-onb-next data-i18n="onbContinue">Continuar</button>
+      </div>
+    </section>
+
+    <!-- ONBOARDING-PROFILE-UI-1 — single combined investor-profile
+         step. Collects riskProfile (default: balanced) + ageBand
+         (default: prefer_not_say). Never alarmist, never a quiz.
+         SPEC 45: risk = premium identity cards; age = subordinate block. -->
+    <section class="onb-step" data-onb-step="PROFILE">
+      <h2 class="onb-headline" data-i18n="onbProfileTitle">¿Cómo prefieres invertir?</h2>
+      <p class="onb-sub" data-i18n="onbProfileSub">Aurix adaptará la experiencia a tu enfoque. Podrás cambiarlo cuando quieras.</p>
+
+      <!-- SPEC 45 INVESTOR PROFILE — premium identity CARDS (name + personality line + risk-meter icon slot,
+           illustration-ready). Same data-onb-risk / is-selected / is-active hooks as the old chips → JS,
+           persistence, selection-sync and navigation are untouched. -->
+      <div class="onb-profile-grid" id="onbRiskChips">
+        <button type="button" class="onb-profile-card" data-onb-risk="conservative">
+          <span class="onb-pc-icon" aria-hidden="true"><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i></span>
+          <span class="onb-pc-name" data-i18n="onbRiskConservative">Conservador</span>
+          <span class="onb-pc-desc" data-i18n="onbRiskConservativeDesc">Prioriza preservar capital y reducir volatilidad.</span>
+        </button>
+        <button type="button" class="onb-profile-card is-active" data-onb-risk="balanced">
+          <span class="onb-pc-icon" aria-hidden="true"><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i></span>
+          <span class="onb-pc-name" data-i18n="onbRiskBalanced">Equilibrado</span>
+          <span class="onb-pc-desc" data-i18n="onbRiskBalancedDesc">Busca crecer manteniendo el riesgo bajo control.</span>
+        </button>
+        <button type="button" class="onb-profile-card" data-onb-risk="growth">
+          <span class="onb-pc-icon" aria-hidden="true"><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i></span>
+          <span class="onb-pc-name" data-i18n="onbRiskGrowth">Crecimiento</span>
+          <span class="onb-pc-desc" data-i18n="onbRiskGrowthDesc">Prioriza la apreciación del patrimonio a largo plazo.</span>
+        </button>
+        <button type="button" class="onb-profile-card" data-onb-risk="aggressive">
+          <span class="onb-pc-icon" aria-hidden="true"><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i><i class="onb-pc-bar"></i></span>
+          <span class="onb-pc-name" data-i18n="onbRiskAggressive">Agresivo</span>
+          <span class="onb-pc-desc" data-i18n="onbRiskAggressiveDesc">Acepta mayor volatilidad buscando mayor crecimiento.</span>
+        </button>
+      </div>
+
+      <div class="onb-profile-age">
+        <p class="onb-sub onb-sub--label" data-i18n="onbAgeQuestion">Etapa inversora</p>
+        <div class="onb-chips onb-chips--age" id="onbAgeChips">
+        <button type="button" class="onb-chip" data-onb-age="under_30" data-i18n="onbAgeUnder30">&lt;30</button>
+        <button type="button" class="onb-chip" data-onb-age="age_30_45" data-i18n="onbAge30_45">30–45</button>
+        <button type="button" class="onb-chip" data-onb-age="age_45_60" data-i18n="onbAge45_60">45–60</button>
+        <button type="button" class="onb-chip" data-onb-age="over_60" data-i18n="onbAgeOver60">60+</button>
+        <button type="button" class="onb-chip onb-chip--ghost is-active" data-onb-age="prefer_not_say" data-i18n="onbAgePreferNotSay">Prefiero no decirlo</button>
+        </div>
+        <p class="onb-age-helper" data-i18n="onbAgeHelper">Solo para personalizar tu experiencia.</p>
+      </div>
+
+      <div class="onb-footer onb-footer--split">
+        <button type="button" class="onb-cta onb-cta--ghost" data-onb-back data-i18n="onbBack">Atrás</button>
+        <button type="button" class="onb-cta onb-cta--primary" data-onb-next data-i18n="onbContinue">Continuar</button>
+      </div>
+    </section>
+
+    <!-- Step: ACTIVATION — first asset add -->
+    <section class="onb-step" data-onb-step="ACTIVATION">
+      <div class="onb-activation-art onb-activation-art--orb" aria-hidden="true">
+        <span class="onb-activation-ring onb-activation-ring--1"></span>
+        <span class="onb-activation-ring onb-activation-ring--2"></span>
+        <span class="onb-activation-icon">+</span>
+      </div>
+      <h2 class="onb-headline" data-i18n="onbActTitle">Añade tu primer activo</h2>
+      <p class="onb-sub" data-i18n="onbActSub">Empieza a construir tu visión financiera.</p>
+      <p class="onb-note" data-i18n="onbActNote">Registras información de tu patrimonio: Aurix no mueve dinero ni accede a tus cuentas.</p>
+      <div class="onb-footer onb-footer--split">
+        <button type="button" class="onb-cta onb-cta--ghost" data-onb-back data-i18n="onbBack">Atrás</button>
+        <button type="button" class="onb-cta onb-cta--primary" id="onbAddAssetBtn" data-i18n="onbAddAssetBtn">+ Añadir activo</button>
+      </div>
+    </section>
+
+    <!-- Step: SUCCESS — ONBOARDING-2B: persistent decision state.
+         No auto-close. Count chip + animated tick give the user a
+         clear "what I did" moment, the two CTAs let them choose to
+         keep building or commit to the dashboard. -->
+    <section class="onb-step" data-onb-step="SUCCESS">
+      <div class="onb-success-art onb-success-art--badge" aria-hidden="true">
+        <span class="onb-success-ring"></span>
+        <svg class="onb-success-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12 L10 17 L19 7"/>
+        </svg>
+      </div>
+      <h2 class="onb-headline" id="onbSuccessTitle">Tu primera posición, registrada</h2>
+      <p class="onb-sub" data-i18n="onbSuccessSub">Ya forma parte de tu visión patrimonial.</p>
+      <div class="onb-success-summary" id="onbSuccessSummary" hidden></div>
+      <span class="onb-success-chip" id="onbSuccessChip"></span>
+      <p class="onb-sub onb-success-body" id="onbSuccessBody"></p>
+      <div class="onb-footer onb-footer--split">
+        <button type="button" class="onb-cta onb-cta--ghost" id="onbAddAnotherBtn" data-i18n="onbAddAnother">Añadir otro activo</button>
+        <button type="button" class="onb-cta onb-cta--primary" id="onbGoDashboardBtn" data-i18n="onbGoDashboard">Ver mi patrimonio</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- AURIX-HEALTH-2: Portfolio Health experience. Self-contained surface
+     opened from the dashboard signal CTA. Header → Score → Metrics →
+     Cards → Disclaimer → Close + (subtle) Advanced analysis link.
+     Workspace is intentionally NOT primary here — bridge demoted to
+     a small text link inside the disclaimer row. -->
+<div class="modal-overlay" id="healthOverlay" aria-hidden="true">
+  <div class="modal modal--health" role="dialog" aria-modal="true" aria-labelledby="healthTitle">
+    <div class="modal-header">
+      <div class="modal-title-block">
+        <h3 id="healthTitle" data-i18n="healthTitle">Salud de cartera</h3>
+        <p class="modal-subtitle" data-i18n="healthSubV2">Diagnóstico inteligente de tu portfolio</p>
+      </div>
+      <button class="modal-close" id="healthClose" aria-label="Close">✕</button>
+    </div>
+
+    <div class="modal-body health-body" id="healthBody">
+
+      <!-- Empty state — visible only when computeAurixSignal returns null
+           AND the panel was opened defensively (assets.length === 0). -->
+      <section class="health-empty" id="healthEmpty" hidden>
+        <div class="health-empty-art" aria-hidden="true">◇</div>
+        <p class="health-empty-msg" data-i18n="healthEmptyTitle">Añade activos para ver la salud de tu cartera.</p>
+      </section>
+
+      <!-- Health score -->
+      <section class="health-score-section" id="healthScoreSection">
+        <div class="health-score-ring" id="healthScoreRing" data-tone="solid">
+          <div class="health-score-value">
+            <span class="health-score-num" id="healthScoreNum">—</span>
+            <span class="health-score-suffix" data-i18n="healthScoreSuffix">/ 100</span>
+          </div>
+        </div>
+        <div class="health-score-meta">
+          <span class="health-score-tag" id="healthScoreLabel">—</span>
+          <div class="health-score-bar"><span class="health-score-bar-fill" id="healthScoreBarFill"></span></div>
+          <p class="health-score-explain" id="healthScoreExplain"></p>
+        </div>
+      </section>
+
+      <!-- Summary metrics row -->
+      <section class="health-metrics" id="healthMetrics">
+        <div class="health-metric">
+          <span class="health-metric-value" id="healthMetAssets">—</span>
+          <span class="health-metric-label" id="healthMetAssetsLabel" data-i18n="healthMetricAssetsLabel">activos</span>
+        </div>
+        <div class="health-metric">
+          <span class="health-metric-value" id="healthMetCats">—</span>
+          <span class="health-metric-label" id="healthMetCatsLabel" data-i18n="healthMetricCategoriesLabel">categorías</span>
+        </div>
+        <div class="health-metric">
+          <span class="health-metric-value" id="healthMetDom">—</span>
+          <span class="health-metric-label" data-i18n="healthMetricDominantLabel">dominante</span>
+        </div>
+        <div class="health-metric">
+          <span class="health-metric-value" id="healthMetCash">—</span>
+          <span class="health-metric-label" data-i18n="healthMetricLiquidityLabel">liquidez</span>
+        </div>
+      </section>
+
+      <!-- Diagnostic cards (rendered dynamically; max 5) -->
+      <section class="health-cards" id="healthCards"></section>
+
+      <!-- Disclaimer + subtle advanced link -->
+      <div class="health-footer-row">
+        <p class="health-disclaimer" data-i18n="healthDisclaimer">Esto no es una recomendación financiera.</p>
+        <button type="button" class="health-advanced-link" id="healthWorkspaceBtn" data-i18n="healthAdvancedCta">Abrir análisis avanzado</button>
+      </div>
+
+      <div class="health-actions">
+        <button type="button" class="btn-submit btn-submit--ghost" id="healthCloseBtn" data-i18n="healthCtaClose">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- DSH.DONUT.01 — Portfolio composition modal (desktop only; opened by the micro-donut next
+     to the analysis pill). Reuses the .modal-overlay / .modal chrome. Real percentages from
+     getInvestableDistribution(); no invented data. -->
+<div class="modal-overlay" id="compositionOverlay" aria-hidden="true">
+  <div class="modal modal--composition" role="dialog" aria-modal="true" aria-labelledby="compositionTitle">
+    <div class="modal-header">
+      <div class="modal-title-block">
+        <h3 id="compositionTitle" data-i18n="compositionTitle">Composición de cartera</h3>
+      </div>
+      <button class="modal-close" id="compositionClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-body aurix-composition-body">
+      <div class="aurix-composition-chart" id="compositionChart" aria-hidden="true"></div>
+      <div class="aurix-composition-tip" id="compositionTip" aria-hidden="true"></div>
+      <ul class="aurix-composition-legend" id="compositionLegend"></ul>
+    </div>
+    <div class="health-actions">
+      <button type="button" class="btn-submit btn-submit--ghost" id="compositionCloseBtn" data-i18n="compositionClose">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS-1: reset confirmation. Requires typing the matching token
+     so destructive action is never one accidental tap away. -->
+<div class="modal-overlay" id="resetConfirmOverlay">
+  <div class="modal modal--reset" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
+    <div class="modal-header">
+      <h3 id="resetConfirmTitle" data-i18n="resetTitle">Resetear cartera</h3>
+      <button class="modal-close" id="resetConfirmClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="reset-warn-lead" data-i18n="resetWarnLead">Esta acción no se puede deshacer.</p>
+      <ul class="reset-list">
+        <li data-i18n="resetItemAssets">Activos</li>
+        <li data-i18n="resetItemTx">Transacciones</li>
+        <li data-i18n="resetItemHistory">Historial de cartera</li>
+        <li data-i18n="resetItemCategory">Historial por categoría</li>
+        <li data-i18n="resetItemWatch">Seguimiento</li>
+        <li data-i18n="resetItemDemo">Datos de prueba</li>
+      </ul>
+      <p class="reset-keep" data-i18n="resetKeep">Se conservan tu idioma, moneda base y plan.</p>
+      <label class="reset-confirm-label" for="resetConfirmInput" data-i18n="resetTypeLabel">Escribe RESET para confirmar</label>
+      <input type="text" class="reset-confirm-input" id="resetConfirmInput" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="RESET">
+      <button type="button" class="btn-submit btn-submit--danger" id="resetConfirmBtn" disabled data-i18n="resetDeleteBtn">Eliminar datos y empezar de cero</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPEC PLATFORM-HARDENING.3 — user-safe technical diagnostics modal. Simple by design:
+     a plain-language privacy note, the generation time / Aurix version / local report id,
+     copy + (when available) share buttons, and an optional collapsed technical dump. All
+     content is produced by window.AurixDiagShare (PII-free, sanitized). Nothing is sent. -->
+<div class="modal-overlay" id="diagOverlay">
+  <div class="modal modal--diag" role="dialog" aria-modal="true" aria-labelledby="diagTitle">
+    <div class="modal-header">
+      <h3 id="diagTitle" data-i18n="diagTitle">Diagnóstico técnico</h3>
+      <button class="modal-close" id="diagClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body diag-body">
+      <p class="diag-intro" data-i18n="diagIntro">Este informe ayuda a soporte a resolver una incidencia. No contiene datos financieros, personales ni información de tu cartera, y no se envía a ningún sitio automáticamente.</p>
+      <div class="diag-meta">
+        <div class="diag-meta-row"><span class="diag-meta-label" data-i18n="diagReportId">Identificador del informe</span><span class="diag-meta-value" id="diagReportId">—</span></div>
+        <div class="diag-meta-row"><span class="diag-meta-label" data-i18n="diagVersion">Versión de Aurix</span><span class="diag-meta-value" id="diagReportVersion">—</span></div>
+        <div class="diag-meta-row"><span class="diag-meta-label" data-i18n="diagGeneratedAt">Generado</span><span class="diag-meta-value" id="diagReportTime">—</span></div>
+      </div>
+      <div class="diag-actions">
+        <button type="button" class="btn-submit diag-btn" id="diagCopyBtn" data-i18n="diagCopyBtn">Copiar informe técnico</button>
+        <button type="button" class="btn-submit btn-submit--ghost diag-btn" id="diagShareBtn" hidden data-i18n="diagShareBtn">Compartir informe técnico</button>
+      </div>
+      <details class="diag-details">
+        <summary data-i18n="diagDetails">Ver detalles técnicos</summary>
+        <pre class="diag-dump" id="diagDump" aria-live="polite"></pre>
+      </details>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
