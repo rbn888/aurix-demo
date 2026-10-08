@@ -14720,7 +14720,13 @@ function _aurixFxBadgeNote(range, published) {
     if (st.status !== 'live' && _aurixFxEurExposureNative() > 0) return t('fxBadgeApprox');
     // La nota dice lo que el cálculo HIZO: con el gráfico publicado, su motivo; sin él, el rango.
     let limited;
-    if (published && typeof published === 'object') limited = published.returnSuppressedReason === 'fx_basis_change' || published.fxBasisLimited === true;
+    if (published && typeof published === 'object') {
+      // El 24H decide en su propia rama de preparación y publica otro motivo: se mira también si lo
+      // publicado NO tiene variación y su línea base cae antes del límite de base del tipo.
+      const bTs = Number(published.baselineTs != null ? published.baselineTs : published.firstTs);
+      limited = published.returnSuppressedReason === 'fx_basis_change' || published.fxBasisLimited === true
+        || (!Number.isFinite(published.returnPct) && Number.isFinite(bTs) && _aurixFxBasisLimited(bTs));
+    }
     else { const span = _AURIX_RANGE_MS[String(range || '').toLowerCase()]; limited = _aurixFxBasisLimited(span ? Date.now() - span : -Infinity); }
     if (!limited) return '';
     const b = _aurixFxBasisBoundary();
@@ -52708,6 +52714,8 @@ function _wscPaintEmergency(changeEl, hostEl, opts) {
 
   // Badge — one source, always coherent with the line.
   if (changeEl) _aurixEmergencyPaintBadgeNode(changeEl, emg, surface);
+  // Mismo badge, otro pintor (el del gráfico de emergencia): también explica el cambio de base del tipo.
+  if (changeEl && typeof _aurixFxMarkBadge === 'function') _aurixFxMarkBadge(changeEl, emg);
 
   // SPEC.19 — FINAL RENDER SERIES CONTRACT. When ON, the desktop painter draws EXCLUSIVELY what the single
   // resolver returns (renderPoints / mode / colorState) — no path picks points on its own, so desktop and
